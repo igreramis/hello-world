@@ -1,0 +1,78 @@
+-Create A Repository
+
+-Create a Branch
+Its like Nucleus is their in SVN and you checkout the entire current development branch. 
+It it made on cloud, or on your local system? Its made on the cloud. And you modify the files on the cloud as well (the ones i guess that can be modified).
+
+-Make a Commit
+Where, how do you make changes? On local setup or the web? On the web.
+When you say commit, what the fuck does that mean? Commit on the branch you've created off the main. THats what it means. But, is the change local or remote?Its remote, on the web.
+Because you didn't create a local copy. I HAVE READ ABOUT THESE THINGS RELATED TO COMMIT CALLED STAGING AND PUSH. What are there parts?
+-Open a Pull Request
+This request ASKs people to PULL YOUR CHANGES to their system FOR REVIEW
+-Merge a Pull Request
+Once above is successful, you merge the changes from your branch into the main(master) branch.
+
+DOCUMENT YOUR UNDERSTANDING WITH HEADINGS LIKE THE ONE BELOW.
+The GitHub flow is: create a branch to work on updates, commit changes to save them, open a pull request to propose and discuss changes, and merge pull requests once everyone
+is on the same page.
+
+
+
+
+SVN needs connection to central repo. Git does not need any connection to a repo...?How does this work out?
+
+what is the differece between git merge and git push? maybe, merge has the pre-requisite of having two branches to work on. And push has the pre-requisite of one branch and 
+some piece of code where the code is lying locally on your system. So when needing to move the code to branch, you push it. is the branch REMOTE or LOCAL?
+
+Take a snapshot of the staging area and push the changes to fucking hell
+
+What is staging in Github? Like in terms of SVN, what are the parallel steps?
+In SVN, you make changes to the code in a text-editor and the changes happen in a revisioned code repo. Then, once you are satisfied with the changes, you move them into a branch?
+or the master? Depends on your work setup.
+
+
+It seems that staging part of Git is a part which holds all the changes that have been made to revisioned source files. The staging area has this feature
+which allows you to choose which of the changes made, you want to commit and which you want to leave for further development. Thats how it seems to work...
+
+download repo on to local machine. that means the entire fucking project. download, the entire fucking project onto the local machine. no branches. the whole project. the whole code base. the development branch.
+
+Contribute to an existing repository
+-download repo onto local machine
+	-you use the cloning command to do this. This process is called cloning.
+-make a new branch for storing your changes
+	-first, move into the above checked-out repo.
+	-use git branch your-branch-name command for creating a new branch
+-make your intended changes in that branch
+	-first switch to the new branch committed. Use the git checkout my-branch command for that.
+	-make changes in  a notepad
+	-compile and verify
+-stage the changes
+	-use the git add file1 file2 ... command to stage the changes.
+	-Then, select from the staged changes, the ones you actually want to commit.
+-move them to remote branch
+	-commit these changes using the git commit -m "message" command. <-WHERE DOES PUSH COME IN THEN?
+
+Contribute to an existing branch on GitHub
+(In this situation, a project already exists on the machine, and a new branch has been pushed to GitHub.com since the last time changes were made locally)
+(So you basically need to contribute into the project)
+-go into the repo dir existing on the local system
+cd repo
+-update the repo so that all its branches and sub branches get updated
+git pull
+-change into the newly added branch
+use git checkout command to do this:git checkout feature-a <-so the checkout command is used in svn to get code from remote server onto local machine. but here, its used to get access
+to a branch of the code repo.
+-make changes to files via notepad
+-stage/commit the changes
+-push changes to hithub
+
+
+git checkout vs git branch
+file://ap.bm.net/sydney/ProdDev/Utils/USB-Quokka-Drivers
+Flash: 96-256KB
+RAM: 5-12KB
+
+
+
+http://ausydvs25/Bonobo.Git.Server/Utilinet.git
