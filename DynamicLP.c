@@ -404,19 +404,11 @@ void LP_WriteIntervalData(_lp_data_set_state_t *pLPState,unsigned char *Flags, u
 {
   unsigned long offset;
   unsigned char size;
-#ifdef LPDEBUG
-  // debugging
-  unsigned char a;
-  unsigned short int *DeltaDebug = Deltas;
-#endif
+
   
   if(index>3)
     return;
-#ifdef LPDEBUG
-  // hack for debugging lp, use interval number instead of deltas
-  printf("lp%u\n",pLPState->ActiveInterval + (pLPState->Nbr_blk_ints*pLPState->ActiveBlock));
-  for(a=0;a<pLPState->Nbr_Chns;a++){ *DeltaDebug = pLPState->ActiveInterval + (pLPState->Nbr_blk_ints*pLPState->ActiveBlock); DeltaDebug++; }
-#endif
+
 
   offset=LP_OffsetOfCurrBlock(pLPState)+LP_OffsetOfCurrIntValues(pLPState);
   size=pLPState->Nbr_Chns * sizeof(_int_fmt1_rcd_t);
@@ -648,25 +640,6 @@ void LP_Init(unsigned long DownTimeDuration)
   CalcTableHash(eStdT62_LPControl,&crc32);
   crcTemp = crc32;
   CalcTableHash(eMfgT36_LP_QOS_Cfg,&crc32);
-
-#if defined(AMPY_METER_NO_RF)
-  //In interruption test we found the fw upgrade event was falsely trigger which cause this piece of code had been excuted twice. 
-  //To cover the falsely trigger fw upgrade issue, use the gLPState.sets[0].Nbr_blk_ints as the indicator. Now that Nbr_blk_ints is fixed to 96,
-  //we don't need to shift the setting again if the 96 has already been in the correct position.  The 3 bytes later field cannot be 96.
-  unsigned char *pDat;
-  unsigned short pos;
-  if((gFirmwareUpdated)&&(gLPState.sets[0].Nbr_blk_ints!=96))
-  { 
-     pDat = (unsigned char*)&gLPState; 
-     for(pos=(sizeof(gLPState)-1); pos>=offsetof(_mfg_table_56_t,QOSAvgN[0][0]); pos--)
-       pDat[pos] = pDat[pos-11];
-     pos=offsetof(_mfg_table_56_t,QOSAvgN[0][0]);
-     pos--;
-     for(;pos>=offsetof(_mfg_table_56_t,sets[0].Nbr_Blks);pos--)
-       pDat[pos] = pDat[pos-3];
-     gLPState.LPFlags[1]=gLPState.LPFlags[2]=gLPState.LPFlags[3]=gLPState.sets[0].LastUnreadBlk=0;     
-  }
-#endif
   
   if((crc32 != CRCRef) )//&& (!gFirmwareUpdatedLP))
   {
@@ -687,11 +660,6 @@ void LP_Init(unsigned long DownTimeDuration)
     }
   }
 
-#if defined(LIMITED_PRODUCTION_VERSION)
-  memset(&gLPState.NumSets,0,sizeof(gLPState.NumSets));
-  memset(&gLPState.LPFlags,0,sizeof(gLPState.LPFlags));
-  LP_ChangeActiveModeFlags(LP_SETALL);
-#endif
        
   /*if(gFirmwareUpdatedLP)
     memset(&gLPState.LPFlags[1],0,sizeof(unsigned char)*3);*/
@@ -824,9 +792,6 @@ void LP_PowerDown()
     gLPState.sets[i].TimeShiftDelta-=LostTime;//subtract the lost time from the interval
     //don't write any partial intervals here, writing will be dealt with on power up
   }
-#if  (1)
-    LP_mirror_shutdown(LP_SETALL);
-#endif
   
   TableWrite(eMfgT56_LPState,0,sizeof(gLPState),&gLPState);
 }
@@ -859,9 +824,6 @@ void LP_PowerUp(unsigned long DownTimeDuration)
   }
   LP_ChangeActiveModeFlags(resetflag);
   
-#if  (1)
-  LP_mirror_init();
-#endif
   LPZeroFillingTimeChgn(DownTimeDuration, eLPPowerUp);
 }
 
@@ -1430,9 +1392,7 @@ unsigned char LPPartialMfgProc(unsigned char *pData)
       gLPState.sets[set-1].LastUnreadBlk = gLPState.sets[set-1].ActiveBlock - numprevblks;
       if(gLPState.sets[set-1].LastUnreadBlk > gLPState.sets[set-1].Nbr_Blks)
         gLPState.sets[set-1].LastUnreadBlk += gLPState.sets[set-1].Nbr_Blks;
-#ifdef LPDEBUG
-      printf("Setting LastUnreadBlk for set %u to %u\n", set-1, gLPState.sets[set-1].LastUnreadBlk);
-#endif
+
       retval = 1;
     }
   }
@@ -1526,19 +1486,14 @@ unsigned long LP_CalcPartialTableSize(unsigned short TableNum)
     {
       lastvalidblk = LP_CalcLastValidBlock(set);               // find the last valid block
       lastunreadblk = gLPState.sets[set].LastUnreadBlk;        // the last unread block was saved at the time the mfg procedure was called
-#ifdef LPDEBUG
-      printf("lastvalidblk: %u\n",lastvalidblk);
-      printf("lastunreadblk: %u\n",lastunreadblk);
-#endif
+
       tempshort = (lastvalidblk - lastunreadblk) + 1;          // how many blocks will be visible
       if(tempshort > gLPState.sets[set].Nbr_Blks)              // handle wrap
         tempshort += gLPState.sets[set].Nbr_Blks;
       temp = (unsigned long int) tempshort * LP_CalcSizeOfBlock(&gLPState.sets[set]);
     }
   }
-#ifdef LPDEBUG
-  printf("returns: %ld\n",temp);
-#endif
+
   return temp;
 }
 
@@ -1553,11 +1508,7 @@ unsigned long LP_CalcPartialTableSize(unsigned short TableNum)
 unsigned short int LP_CalcLastValidBlock(unsigned char set)
 {
   unsigned short int retval;
-#ifdef LPDEBUG
-  printf("LP_CalcLastValidBlock() \n");
-  printf("gLPState.sets[set].ActiveBlock: %u \n", gLPState.sets[set].ActiveBlock);
-  printf("gLPState.sets[set].Nbr_Blks: %u \n", gLPState.sets[set].Nbr_Blks);
-#endif
+
   retval = gLPState.sets[set].ActiveBlock - 1;       // the last completed block is behind the active block
   if(retval > gLPState.sets[set].Nbr_Blks)           // handle wrap
     retval += gLPState.sets[set].Nbr_Blks;
@@ -1591,19 +1542,9 @@ unsigned short LP_flashRead (unsigned char *dest, unsigned long src, unsigned sh
       ? (DF_DATA_SIZE - addr)
         : len;
         len = len - len_in_page;
-#if  (1)
-        if (page == LP_active_page[data_set]) {
-          memcpy(dest, LP_mirror[data_set]+addr, len_in_page);
-          //          remote_port_out_str("LP_flashRead set"); remote_port_out_short(data_set); remote_port_out_str(", page("); remote_port_out_short(page);
-          //          remote_port_out_str(")==active page("); remote_port_out_short(LP_active_page[data_set]); remote_port_out_str(")\r\n");
-        } else {
-#endif
+
           DataFlashReadPageBytes( page, addr, dest, len_in_page );
-#if  (1)
-          //         remote_port_out_str("LP_flashRead set"); remote_port_out_short(data_set); remote_port_out_str(", page("); remote_port_out_short(page);
-          //          remote_port_out_str(")!=active page("); remote_port_out_short(LP_active_page[data_set]); remote_port_out_str(")\r\n");
-        }
-#endif
+
         dest += len_in_page;
         
         // prepare dataflash to access addr 0 of next page
@@ -1633,9 +1574,7 @@ unsigned short LP_flashWrite(unsigned long dest, unsigned char *src, unsigned sh
   
   if((dest < AEMLPDATASTARTADDR) || (dest > AEMLPDATAENDADDR))
   {
-#ifdef LPDEBUG
-    printf("LPW!!!\n");
-#endif
+
     return 0;
   }
   
@@ -1650,7 +1589,7 @@ unsigned short LP_flashWrite(unsigned long dest, unsigned char *src, unsigned sh
         : len;
         len = len - len_in_page;
 
-#if  (1)
+
 		  //printf("=%d,=%d \n",page,(unsigned short)LP_active_page[data_set]);
         if (page == LP_active_page[data_set]) {
           memcpy(LP_mirror[data_set]+addr, src, len_in_page);
@@ -1666,9 +1605,7 @@ unsigned short LP_flashWrite(unsigned long dest, unsigned char *src, unsigned sh
           LP_active_page[data_set] = page;
         }
         LP_mod_flag |= 1 << data_set;
-#else
-        AMPYDFWritePageBytes( page, addr, src, len_in_page );
-#endif
+
         src += len_in_page;
 
         if ((DF_refresh_on_write)&&(gLPZeroFilling==0))
@@ -1703,10 +1640,7 @@ unsigned long LP_GetTableSize(unsigned short TableNum)
     temp=gLPState.sets[val].Nbr_Blks;
     temp*=LP_CalcSizeOfBlock(&gLPState.sets[val]);
   }
-#if defined(SIMULATION_SR)
-  if(temp>MAXLPSIZE)
-    temp=MAXLPSIZE;
-#endif
+
   return temp;
 }
 
@@ -2040,9 +1974,7 @@ void LP_MinMaxAvg(_lp_data_set_state_t *pLPState, char index, unsigned char * Fl
     //Move special hack for data collection on phase A reactive to phase C.
 #if 1
     if(x==eT16_ReactPwrPhC)
-#else
-      if(x==eT16_ReactPwrPhA)
-#endif
+		
         val=Metrology_NICalcSpecialLPVal();//
 #endif
     if (LP_IsQOSMin(index, i))
@@ -2204,9 +2136,6 @@ void LP_PrintLPState( void )
     printf("\n");
     
     printf(" \n",gLPState.sets[i].BkpLastTime);
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)|| defined(DYNAMIC_LP)
-    printf(" LastUnreadBlk %u\n",gLPState.sets[i].LastUnreadBlk);
-#endif
     
     printf(" QOSAvgN");
     for(pos=0;pos<NUM_CH_PER_DATA_SET;pos++)

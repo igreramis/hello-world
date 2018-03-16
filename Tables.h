@@ -598,11 +598,6 @@ enum{
 };
 
 //-----------------------------Structures---------------------------------------
-#if defined(SIMULATION_SR)
-   #ifdef __GNUC__ //generate packed structs in GCC
-      #pragma pack(push,1)
-   #endif
-#endif
 
 //             ++++++++++Standard ANSI Tables +++++++++++++
 //user defined format used in many tables

@@ -58,31 +58,10 @@
 #include "Metrology.h"
 #include "QOS.h"
 #include "LPQoS.h"
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(LC_RSM)
-   #include "Ripple.h"
-   #include "RippleApp.h"
-#endif
+
 #include "RelayAppLC.h"
 #include "MetrologyADCDriver.h"
 #include "SysMonitor.h"
-#if defined(NEUTRAL_INTEGRITY_POLY)
-   #include "PolyPhaseNI.h"
-#endif
-#if defined(PULSE_OUTPUT)
-#include "pulseoutput.h"
-#endif
-#if DBG_DIAGTABLE
-#include "TablesDiag.h"
-#endif
-#if defined(SIMULATION_SR)
-   #ifdef __GNUC__ //generate packed structs in GCC
-      #pragma pack(push,1)
-   #endif
-#endif
-
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)
-   #define DEBUG_EVENT_LOG_ADD_ON_CMD
-#endif
 
 //#define SIZE_TEST
 void InitDefaultTableData(void);                // remove me, prototype for some hackery down in mexico
@@ -111,18 +90,11 @@ extern unsigned char gAMPY_NV_Write_Err_Count;
 unsigned short    gTableUpdateHandlerPending =0;     //In the event the multi packet write stream stops on error or if there is power failure,this helps us identify if the function handler for that table is to be called
 extern unsigned char gFirmwareUpgrade; //used to disabled flash packing on firmware upgrade.
 
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)
-extern unsigned char gU1300Ver2;
-unsigned char gU1300S2_ValidFirmware = 1; //Always assume that the firmware is valid
-#endif
-
 // Instances
 //0-device config, ID, Procedure
-#ifndef Simulation
-const _std_table_00_t std_table_00_struct=
-#else
+
 _std_table_00_t std_table_00_struct=
-#endif
+
 {
    (GEN_CONFIG_TBL_DOT_DATA_ORDER)|(GEN_CONFIG_TBL_DOT_CHAR_FORMAT<<1)|(GEN_CONFIG_TBL_DOT_MODEL_SELECT<<4),//format_control_1
    (GEN_CONFIG_TBL_DOT_TM_FORMAT)|(GEN_CONFIG_TBL_DOT_DATA_ACCESS_METHOD<<3)|(GEN_CONFIG_TBL_DOT_ID_FORM<<5)|(GEN_CONFIG_TBL_DOT_INT_FORMAT<<6),//format_control_2
@@ -141,25 +113,11 @@ _std_table_00_t std_table_00_struct=
    GEN_CONFIG_TBL_DOT_DIM_MFG_STATUS_USED,//dim_mfg_status_used
    GEN_CONFIG_TBL_DOT_NBR_PENDING,//nbr_pending
    {0xEF,0xBD,0xF1,0xDF,0x03,0x00,0xFC,0xF1,0xCF,0x19},//std_tbls_used[GEN_CONFIG_TBL_DOT_DIM_STD_TBLS_USED]
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)
-   {0x21,0x10,0xF0,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x9F,0x00,0x3C,0x00},//mfg_tbls_used[GEN_CONFIG_TBL_DOT_DIM_MFG_TBLS_USED]
-   {0xBB,0x07,0x01},//std_proc_used[GEN_CONFIG_TBL_DOT_DIM_STD_PROC_USED]
-   {0xB7,0xF3,0x07},//mfg_proc_used[GEN_CONFIG_TBL_DOT_DIM_MFG_PROC_USED]
-   {0xE0,0x20,0x60,0x80,0x03,0x00,0x68,0x60,0x00,0x08},//std_tbls_write[GEN_CONFIG_TBL_DOT_DIM_STD_TBLS_USED]
-   {0x00,0x00,0xC0,0x66,0x7D,0xFC,0x05,0x0E,0x1C,0x02,0x00,0x00,0x00},//mfg_tbls_write[GEN_CONFIG_TBL_DOT_DIM_MFG_TBLS_USED]
-#elif defined(AMPY_METER_U3400)
-   {0x21,0x10,0xE0,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x9F,0x00,0x3C,0x00},//mfg_tbls_used[GEN_CONFIG_TBL_DOT_DIM_MFG_TBLS_USED]
-   {0xBB,0x07,0x01},//std_proc_used[GEN_CONFIG_TBL_DOT_DIM_STD_PROC_USED]
-   {0xB7,0xF3,0x07},//mfg_proc_used[GEN_CONFIG_TBL_DOT_DIM_MFG_PROC_USED]
-   {0xE0,0x20,0x60,0x80,0x03,0x00,0x68,0x60,0x00,0x08},//std_tbls_write[GEN_CONFIG_TBL_DOT_DIM_STD_TBLS_USED]
-   {0x00,0x00,0xC0,0x66,0x7D,0xFC,0x05,0x0E,0x1C,0x02,0x00,0x00,0x00},//mfg_tbls_write[GEN_CONFIG_TBL_DOT_DIM_MFG_TBLS_USED]
-#else
    {0x21,0x10,0xE0,0xF3,0xFF,0xFF,0xFF,0xFF,0xFF,0x91,0x00,0x00,0x00},//mfg_tbls_used[GEN_CONFIG_TBL_DOT_DIM_MFG_TBLS_USED]
    {0xBB,0x07,0x01},//std_proc_used[GEN_CONFIG_TBL_DOT_DIM_STD_PROC_USED]
    {0xB7,0x73,0x05},//mfg_proc_used[GEN_CONFIG_TBL_DOT_DIM_MFG_PROC_USED]
    {0xE0,0x20,0x60,0x80,0x03,0x00,0x68,0x60,0x00,0x08},//std_tbls_write[GEN_CONFIG_TBL_DOT_DIM_STD_TBLS_USED]
    {0x00,0x00,0xC0,0x62,0x7D,0xFC,0x05,0x0E,0x1C,0x00,0x00,0x00,0x00},//mfg_tbls_write[GEN_CONFIG_TBL_DOT_DIM_MFG_TBLS_USED]
-#endif
 };
 
 _std_table_03_t std_table_03_struct;
@@ -425,7 +383,6 @@ const _std_table_60_t std_table_60_struct = {
        0, //filler                     :4;//zero
     },
     { // lp_fmats
-#if (LP_CTRL_TBL_DOT_INT_FMT_CDE1 == 2)
        FALSE, //inv_uint8_flag    :1;//format is uint8
        TRUE, //inv_uint16_flag   :1;//format is uint16
        FALSE, //inv_uint32_flag   :1;//format is uint32
@@ -434,9 +391,8 @@ const _std_table_60_t std_table_60_struct = {
        FALSE, //inv_int32_flag    :1;//format is int32
        FALSE, //inv_ni_fmat1_flag :1;//format is ni_fmat1 (manufacturer defined)
        FALSE, //inv_ni_fmat2_flag :1;//format is ni_fmat2 (manufacturer defined)
-#else
-#error dunno if we're supporting that
-#endif
+
+
     },
     { //Config[NUM_LP_DATA_SETS]
        //Nbr_Blks;//number of data blocks
@@ -496,10 +452,6 @@ const _std_table_72_t std_table_72_struct=
 
 
 //mfg tables
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(LC_RSM)
-_mfg_table_27_t mfg_table_27_struct;
-_mfg_table_70_t mfg_table_69_struct_special;
-#endif
 _mfg_table_24_t mfg_table_24_struct;
 _mfg_table_29_t mfg_table_29_struct;
 _mfg_table_31_t mfg_table_31_struct;
@@ -510,9 +462,6 @@ volatile _mfg_table_62_t mfg_table_62_struct;
 _mfg_table_64_t mfg_table_64_struct;
 _mfg_table_70_t mfg_table_69_struct_special;
 _mfg_table_71_t mfg_table_71_struct;
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(LC_RSM)
-_mfg_table_75_t mfg_table_75_struct;
-#endif
 
 //place super important NV data at the start of the memory map so that changes
 //to table structures are unlikely to impact on the important stuff during a
@@ -527,11 +476,8 @@ _mfg_table_75_t mfg_table_75_struct;
 #define ADDR_EXT_FLASH_MFG057 (ADDR_EXT_FLASH_MFG039  + sizeof(struct _CalData3Phase) + FUTURE_PROOF_PAGE) //communication parameters
 #define ADDR_EXT_FLASH_MFG041 (ADDR_EXT_FLASH_MFG057  + sizeof(_mfg_table_57_t) + FUTURE_PROOF_PAGE) //statistics like tamper counters
 
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(AMPY_METER_U3400)
-   #define ADDR_EXT_FLASH_STD02     (ADDR_EXT_FLASH_MFG041  + sizeof(_mfg_table_41_t) + FUTURE_PROOF_PAGE-93)
-#else
    #define ADDR_EXT_FLASH_STD02     (ADDR_EXT_FLASH_MFG041  + sizeof(_mfg_table_41_t) + FUTURE_PROOF_PAGE)
-#endif
+
 #define ADDR_EXT_FLASH_STD06     (ADDR_EXT_FLASH_STD02   + sizeof(_std_table_02_t) + FUTURE_PROOF_PAGE)
 #define DEVICE_ID_IN_STD06       (ADDR_EXT_FLASH_STD06 + offsetof(_std_table_06_t,device_id))
 #define ADDR_EXT_FLASH_STD21     (ADDR_EXT_FLASH_STD06   + sizeof(_std_table_06_t) + FUTURE_PROOF_PAGE)
@@ -551,21 +497,15 @@ _mfg_table_75_t mfg_table_75_struct;
 #define ADDR_EXT_FLASH_MFG065    (ADDR_EXT_FLASH_STD75   + sizeof(_std_table_73_t) + FUTURE_PROOF_PAGE) // MetrologyDebug // eMfgT77_NV_Energy.  (4*6 below refers to: 6 sets of energy registers, each consisting of 3 phases + total)
 #define ADDR_EXT_FLASH_MFG034    (ADDR_EXT_FLASH_MFG065  + (sizeof(ni_fmat1_t)*4*6)+ FUTURE_PROOF_PAGE)    // fixme: could be less 'brittle'.
 #define ADDR_EXT_FLASH_MFG066    (ADDR_EXT_FLASH_MFG034  + sizeof(_mfg_table_34_t) + FUTURE_PROOF_PAGE-37)//Current Relay Configuration
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100) || defined(AMPY_METER_U3400)
-   #define ADDR_EXT_FLASH_MFG067    (ADDR_EXT_FLASH_MFG066  + sizeof(_mfg_table_66_t) + FUTURE_PROOF_PAGE-24)//add TOD in T66//Future Relay Configuration-10//FUTURE_PROOF_PAGE-8 because the earlier build was FUTURE_PROOF_PAGE-2,now 6 bytes more used up
-   #define ADDR_EXT_FLASH_MFG068    (ADDR_EXT_FLASH_MFG067  + sizeof(_mfg_table_67_t) + FUTURE_PROOF_PAGE-24)//Relay Settings
-   #define ADDR_EXT_FLASH_MFG070    (ADDR_EXT_FLASH_MFG068  + sizeof(_mfg_table_68_t) + FUTURE_PROOF_PAGE)//Relay Status Backup
-#else
+
    #define ADDR_EXT_FLASH_MFG067    (ADDR_EXT_FLASH_MFG066  + sizeof(_mfg_table_66_t) + FUTURE_PROOF_PAGE-60)//Future Relay Configuration
    #define ADDR_EXT_FLASH_MFG068    (ADDR_EXT_FLASH_MFG067  + sizeof(_mfg_table_67_t) + FUTURE_PROOF_PAGE-60)//Relay Settings
    #define ADDR_EXT_FLASH_MFG070    (ADDR_EXT_FLASH_MFG068  + sizeof(_mfg_table_68_t) + FUTURE_PROOF_PAGE-50)//Relay Status Backup
-#endif
 
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(LC_RSM)
-#define ADDR_EXT_FLASH_MFG030    (ADDR_EXT_FLASH_MFG070  + sizeof(_mfg_table_70_t) + FUTURE_PROOF_PAGE-5)
-#else
+
+
 #define ADDR_EXT_FLASH_MFG030    (ADDR_EXT_FLASH_MFG070  + sizeof(_mfg_table_70_t) + FUTURE_PROOF_PAGE-2)
-#endif
+
 #define ADDR_EXT_FLASH_MFG038    (ADDR_EXT_FLASH_MFG030  + sizeof(_mfg_table_30_t) + FUTURE_PROOF_PAGE)
 #define ADDR_EXT_FLASH_MFG037    (ADDR_EXT_FLASH_MFG038  + sizeof(_mfg_table_38_t) + 32)
 
@@ -576,11 +516,9 @@ _mfg_table_75_t mfg_table_75_struct;
 #define ADDR_EXT_FLASH_MFG058    (ADDR_EXT_FLASH_STD13   + sizeof(_std_table_13_t) + FUTURE_PROOF_PAGE)
 #define ADDR_EXT_FLASH_MFG056    (ADDR_EXT_FLASH_MFG058  + sizeof(_mfg_table_58_t) + FUTURE_PROOF_PAGE)
 
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)|| defined(DYNAMIC_LP)
-   #define ADDR_EXT_FLASH_MFG055    (ADDR_EXT_FLASH_MFG056  + sizeof(_mfg_table_56_t) + FUTURE_PROOF_PAGE-103)
-#else
+
    #define ADDR_EXT_FLASH_MFG055    (ADDR_EXT_FLASH_MFG056  + sizeof(_mfg_table_56_t) + FUTURE_PROOF_PAGE-92)
-#endif
+
 
 #define ADDR_EXT_FLASH_MFG072    (ADDR_EXT_FLASH_MFG055  + sizeof(_std_table_63_t) + FUTURE_PROOF_PAGE)
 #define ADDR_EXT_FLASH_STD61     (ADDR_EXT_FLASH_MFG072  + sizeof(_mfg_table_54_t) + FUTURE_PROOF_PAGE-247)
@@ -598,21 +536,7 @@ _mfg_table_75_t mfg_table_75_struct;
 #define ADDR_EXT_FLASH_MFG042    (ADDR_EXT_FLASH_MFG043  + sizeof(_mfg_table_43_t) + FUTURE_PROOF_PAGE)
 #define ADDR_EXT_FLASH_STD54     (ADDR_EXT_FLASH_MFG042  + sizeof(_mfg_table_42_t) + FUTURE_PROOF_PAGE)
 #define ADDR_EXT_FLASH_MFG036    (ADDR_EXT_FLASH_STD54   + sizeof(_std_table_54_t) + FUTURE_PROOF_PAGE)
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(LC_RSM)
-   #define ADDR_EXT_FLASH_MFG073    (ADDR_EXT_FLASH_MFG036  + sizeof(_mfg_table_36_t) + FUTURE_PROOF_PAGE)
-   #define ADDR_EXT_FLASH_SPARE3    (ADDR_EXT_FLASH_MFG073  + sizeof(_mfg_table_73_t) + FUTURE_PROOF_PAGE-198)
-   #define SIZE_EXT_FLASH_SPARE3    (1152 - sizeof(_mfg_table_73_t)-FUTURE_PROOF_PAGE) //954 was size of old MT74, MT74 and MT26 +3*FUTURE_PROOF_PAGE.
-   #define ADDR_EXT_FLASH_MFG025    (ADDR_EXT_FLASH_SPARE3  + SIZE_EXT_FLASH_SPARE3   + FUTURE_PROOF_PAGE)
-   #define ADDR_EXT_FLASH_MFG021    (ADDR_EXT_FLASH_MFG025  + sizeof(_mfg_table_25_t) + FUTURE_PROOF_PAGE)
-   #define ADDR_EXT_FLASH_MFG022    (ADDR_EXT_FLASH_MFG021  + sizeof(_mfg_table_24_t) + FUTURE_PROOF_PAGE)
-   #define ADDR_EXT_FLASH_MFG023    (ADDR_EXT_FLASH_MFG022  + sizeof(_mfg_table_22_t) + FUTURE_PROOF_PAGE)
-   #define ADDR_EXT_FLASH_MFG026    (ADDR_EXT_FLASH_MFG023  + sizeof(_mfg_table_23_t) + FUTURE_PROOF_PAGE)
-   #define ADDR_EXT_FLASH_MFG020    (ADDR_EXT_FLASH_MFG026  + sizeof(_mfg_table_26_t) + FUTURE_PROOF_PAGE)
-   #define ADDR_EXT_FLASH_MFG019    (ADDR_EXT_FLASH_MFG020  + sizeof(_mfg_table_20_t) + FUTURE_PROOF_PAGE)
-   #define ADDR_EXT_FLASH_MFG015    (ADDR_EXT_FLASH_MFG019  + sizeof(_mfg_table_19_t) + FUTURE_PROOF_PAGE)
-   #define ADDR_EXT_FLASH_MFG016    (ADDR_EXT_FLASH_MFG015  + sizeof(_mfg_table_15_t) + FUTURE_PROOF_PAGE)
-   #define ADDR_EXT_FLASH_MFG081    (ADDR_EXT_FLASH_MFG016  + sizeof(_mfg_table_16_t) + FUTURE_PROOF_PAGE)
-#else
+
    #define ADDR_EXT_FLASH_MFG021    (ADDR_EXT_FLASH_MFG036  + sizeof(_mfg_table_36_t) + FUTURE_PROOF_PAGE)
    #define ADDR_EXT_FLASH_MFG022    (ADDR_EXT_FLASH_MFG021  + sizeof(_mfg_table_24_t) + FUTURE_PROOF_PAGE)
    #define ADDR_EXT_FLASH_MFG023    (ADDR_EXT_FLASH_MFG022  + sizeof(_mfg_table_22_t) + FUTURE_PROOF_PAGE)
@@ -621,7 +545,7 @@ _mfg_table_75_t mfg_table_75_struct;
    #define ADDR_EXT_FLASH_MFG015    (ADDR_EXT_FLASH_MFG019  + sizeof(_mfg_table_19_t) + FUTURE_PROOF_PAGE)
    #define ADDR_EXT_FLASH_MFG016    (ADDR_EXT_FLASH_MFG015  + sizeof(_mfg_table_15_t) + FUTURE_PROOF_PAGE)
    #define ADDR_EXT_FLASH_MFG081    (ADDR_EXT_FLASH_MFG016  + sizeof(_mfg_table_16_t) + FUTURE_PROOF_PAGE)
-#endif
+
 #define ADDR_EXT_FLASH_MFG005    (ADDR_EXT_FLASH_MFG081  + sizeof(_mfg_table_81_t) + FUTURE_PROOF_PAGE)
 //place new table address # defs above this line and adjust the line below accordingly
 #define ADDR_EXT_FLASH_END       (ADDR_EXT_FLASH_MFG005  + sizeof(_mfg_table_05_t) + FUTURE_PROOF_PAGE + AEMTABLESTARTADDR - 1)
@@ -746,32 +670,22 @@ const _TableInfoStruct TableConfig[] =
    {eMfgT16_PrePayConfig,     sizeof(_mfg_table_16_t),eExtFlash,  (void HUGE*)ADDR_EXT_FLASH_MFG016,  PrePayConfigUpdate},//2064
    {eMfgT17_FETWrite,         sizeof(_mfg_table_17_t),eDynamic,   NULL,                               NULL},//2065 Factory Encrypted Table Write
    {eMfgT18_FETRead,          sizeof(_mfg_table_17_t),eDynamic,   NULL,                               NULL},//2066 Factory Encrypted Table Read
-#if defined(MAGNETIC_TAMPER)
-   {eMfgT19_MagneticFieldCal, sizeof(_mfg_table_19_t),eExtFlash,  (void HUGE*)ADDR_EXT_FLASH_MFG019,  metrology_driver_dc_mag_update},//2067
-#endif
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(LC_RSM)
-   {eMfgT20_RippleStatusBackup, sizeof(_mfg_table_20_t),eExtFlash,(void HUGE*)ADDR_EXT_FLASH_MFG020,  NULL},//2068 Ripple Status Backup
-#endif
+
    {eMfgT21_TempAppStatusBckp,sizeof(_mfg_table_24_t),eExtFlash,  (void HUGE*)ADDR_EXT_FLASH_MFG021,  NULL},//2069
    {eMfgT22_TempCalData,      sizeof(_mfg_table_22_t),eExtFlash,  (void HUGE*)ADDR_EXT_FLASH_MFG022,  SysMon_MfgT22TempCalUpdate},//2070
    {eMfgT23_TempAppCfg,       sizeof(_mfg_table_23_t),eExtFlash,  (void HUGE*)ADDR_EXT_FLASH_MFG023,  SysMon_MfgT23TempAppCfgUpdate },//2071
    {eMfgT24_TempAppStatus,    sizeof(_mfg_table_24_t),eRAM,       &mfg_table_24_struct,               NULL},//2072
    {eMfgT25_CustFeatureCfg,   sizeof(_mfg_table_25_t),eExtFlash,  (void HUGE*)ADDR_EXT_FLASH_MFG025,  MCom_CustomerConfigUpdate},//2073
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(LC_RSM)
-   {eMfgT26_LCConfg,          sizeof(_mfg_table_26_t),eExtFlash,  (void HUGE*)ADDR_EXT_FLASH_MFG026,  RAppLC_UpdateConfig},//2074
-   {eMfgT27_LCStatus,         sizeof(_mfg_table_27_t),eRAM     ,  &mfg_table_27_struct,               NULL},//2075
-#endif
+
    {eMfgT28_NIBackup,         sizeof(_mfg_table_28_t),eExtFlash,  (void HUGE*)ADDR_EXT_FLASH_MFG028,  NULL},//2076
    {eMfgT29_CommsRAMData,     sizeof(_mfg_table_29_t),eRAM,       &mfg_table_29_struct,               NULL},//2077
    {eMfgT30_FwDlCtrl,         sizeof(_mfg_table_30_t),eExtFlash,  (void HUGE*)ADDR_EXT_FLASH_MFG030,  FwDlCtrlUpdate},//2078
    {eMfgT31_FwDlStatus,       sizeof(_mfg_table_31_t),eRAM,       &mfg_table_31_struct,               NULL},//2079
    {eMfgT32_FwDlDataBlk,      sizeof(_mfg_table_32_t),eDynamic,   NULL,                               NULL},//2080
    {eMfgT33_NIRAMData,        sizeof(_mfg_table_33_t),eRAM,       &mfg_table_33_struct,               NULL},//2081
-#if defined(NEUTRAL_INTEGRITY_POLY)
-   {eMfgT34_NIConfig,         sizeof(_mfg_table_34_t),eExtFlash,  (void HUGE*)ADDR_EXT_FLASH_MFG034,  PolyPhaseNI_NITblUpdate},//2082
-#else
+
    {eMfgT34_NIConfig,         sizeof(_mfg_table_34_t),eExtFlash,  (void HUGE*)ADDR_EXT_FLASH_MFG034,  Metrology_NITblUpdate},//2082
-#endif
+
    {eMfgT35_CommsDisplayList, sizeof(_mfg_table_35_t),eRAM,       &mfg_table_35_struct,               CommsDisplayReady},//2083
    {eMfgT36_LP_QOS_Cfg,       sizeof(_mfg_table_36_t),eExtFlash,  (void HUGE*)ADDR_EXT_FLASH_MFG036,  LP_TableUpdate},//2084
    {eMfgT37_PwdLockoutCfg,    sizeof(_mfg_table_37_t),eExtFlash,  (void HUGE*)ADDR_EXT_FLASH_MFG037,  NULL},//2085
@@ -810,26 +724,11 @@ const _TableInfoStruct TableConfig[] =
    {eMfgT70_RelayStatusBackup,sizeof(_mfg_table_70_t),eExtFlash,  (void HUGE*)ADDR_EXT_FLASH_MFG070,  NULL},//2118
    {eMfgT71_AsyncEventPin,    sizeof(_mfg_table_71_t),eRAM,   	   &mfg_table_71_struct,		         NULL},//2119 note we don't use the 'internal' version of the struct here...
    {eMfgT72_GnrlMeterNVStatusBckp,sizeof(_mfg_table_54_t),eExtFlash,(void HUGE*)ADDR_EXT_FLASH_MFG072,NULL},//2120
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(LC_RSM)
-   {eMfgT73_RippleConfig,     sizeof(_mfg_table_73_t),eExtFlash,(void HUGE*)ADDR_EXT_FLASH_MFG073,ProgRipple},
-   {eMfgT74_RippleEvtLog,  sizeof(_mfg_table_74_t),eDynamic,   (void HUGE*)ADDR_EXT_FLASH_MFG074, NULL},
-   {eMfgT75_RippleResults,    sizeof(_mfg_table_75_t),eRAM,   	   &mfg_table_75_struct,		         NULL},
-#endif
+
    {eMfgT76_LPStateRAM,       sizeof(_mfg_table_56_t),eRAM,       &gLPState,                          NULL},//2124
    {eMfgT79_CrashLog,         AMPY_NV_CRASH_MAX_CHARS,eDynamic,   NULL,                               NULL},//2127
    {eMfgT80_PwrCycTiming,     264,                    eDynamic,   NULL,                               NULL},//2128
-#if defined(PULSE_OUTPUT)
-   {eMfgT81_PulseOutput,      sizeof(_mfg_table_81_t),eExtFlash,  (void HUGE*)ADDR_EXT_FLASH_MFG081,  PulseOutputCfg_update},//2129
-#endif
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)|| defined(DYNAMIC_LP)
-   {eMfgT90_PartialLPDataSet1,MAXLPSIZE,              eDynamic,  (void HUGE*)ADDR_EXT_FLASH_STD64,    NULL},
-   {eMfgT91_PartialLPDataSet2,MAXLPSIZE,              eDynamic,  (void HUGE*)ADDR_EXT_FLASH_STD64,    NULL},
-   {eMfgT92_PartialLPDataSet3,MAXLPSIZE,              eDynamic,  (void HUGE*)ADDR_EXT_FLASH_STD64,    NULL},
-   {eMfgT93_PartialLPDataSet4,MAXLPSIZE,              eDynamic,  (void HUGE*)ADDR_EXT_FLASH_STD64,    NULL},
-#endif
-#if DBG_DIAGTABLE
-   {eMfgT94_DiagnosticsData,  sizeof(_mfg_table_94_t),eRAM,       &mfg_table_94_struct,               Diagnostics_update},//2124
-#endif
+
    {eMfgT95_LPQoSConfig,      sizeof(_mfg_table_95_t),eDynamic,  (void HUGE*)ADDR_EXT_FLASH_MFG095,  LpQos_CfgChanged},   
    {eMfgT96_LPQoSData,        sizeof(_mfg_table_96_t),eDynamic,  (void HUGE*)ADDR_EXT_FLASH_MFG096,  NULL},
    // Kingfisher Classes (really just an extension of Mfg Tables)
@@ -994,13 +893,7 @@ unsigned short TableRead(unsigned short TableNum, unsigned long Offset, unsigned
               memcpy(Buffer, (&PrePayDisplay + Offset), Size);
               RetVal = Size;
             }
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(LC_RSM)
-            else if(TableNum==eMfgT74_RippleEvtLog)
-            {
-              RetVal=flashReadMeter(Buffer,(unsigned long)(TableConfig[TableEntryNum].Address)+(AEMPRIPPLELOGSTARTADDR)+Offset, Size);
-              RippleApp_EventReadHook(Buffer, Offset, Size);
-            }
-#endif
+
            else if(TableNum==eMfgT51_QOSEvent)
            {
              memcpy(Buffer,(&_QoS_Events + Offset), Size);
@@ -1035,14 +928,9 @@ unsigned short TableRead(unsigned short TableNum, unsigned long Offset, unsigned
             }
             break;
       }
-#ifdef TYPETEST_DEBUG
-   CheckIntReg(1);
-#endif
+
    }
-#ifdef SIZE_TEST
-   if(RetVal != Size)
-      printf("RE %d-%d -%d\n",TableNum,RetVal,Size);
-#endif
+
    if(!RetVal)
       Debug(LogDebug,"Meter Task","TableReadEx: Read from table#%i returns %i",TableNum,RetVal);
    return RetVal;
@@ -1050,9 +938,7 @@ unsigned short TableRead(unsigned short TableNum, unsigned long Offset, unsigned
 
 unsigned short TableWrite(unsigned short TableNum, unsigned long Offset, unsigned short Size, void *Buffer)
 {
-#ifdef AMPY_METER_R1100
-  unsigned char Tmp[8];
-#endif
+
    unsigned char TableEntryNum;
    unsigned short RetVal = 0;
    unsigned char WritePacketsInStream = (TableNum & TBL_WRITE_PACKET_IN_STREAM) ? 1 : 0;
@@ -1126,13 +1012,7 @@ unsigned short TableWrite(unsigned short TableNum, unsigned long Offset, unsigne
               memcpy((&PrePayDisplay + Offset),Buffer, Size);
               RetVal = Size;
             }
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(LC_RSM)
-            else if(TableNum==eMfgT74_RippleEvtLog)
-            {
-               RippleApp_EventWriteHook(Offset, Buffer, Size);
-               RetVal = Size;
-            }
-#endif
+
            else if(TableNum==eMfgT51_QOSEvent)
            {
              memcpy((&_QoS_Events + Offset), Buffer, Size);
@@ -1196,26 +1076,7 @@ unsigned short TableWrite(unsigned short TableNum, unsigned long Offset, unsigne
                  QOS_Recover();//This function does updating of the existing breaches
                  RetVal = flashWriteMeter((unsigned long)(TableConfig[TableEntryNum].Address)+(AEMTABLESTARTADDR)+Offset, Buffer, Size);;
                }
-              #ifdef AMPY_METER_R1100
-               else if (TableNum==eMfgT63_MetrologyConfig)
-               {
-                 LED_PulsingConfigActive = 1;
-                 RetVal = flashWriteMeter((unsigned long)(TableConfig[TableEntryNum].Address)+(AEMTABLESTARTADDR)+Offset, Buffer, Size);
-           //      printf("LED_PulsingConfigActive table_c\n");
-               }
-               else if (TableNum==eMfgT25_CustFeatureCfg)
-               {
-                 
-                 memcpy(Tmp, Buffer, 8);
-                 if(Tmp[7] == 0)//Do not write the table in case  Gross metering is set
-                 {
-                   RetVal = flashWriteMeter((unsigned long)(TableConfig[TableEntryNum].Address)+(AEMTABLESTARTADDR)+Offset, Buffer, Size);
-                 //   printf("gross net metering config. = %d\n",Tmp[7]);
-                 }
-   
-                
-               }
-              #endif
+
                else
                  RetVal = flashWriteMeter((unsigned long)(TableConfig[TableEntryNum].Address)+(AEMTABLESTARTADDR)+Offset, Buffer, Size);
             }
@@ -1234,10 +1095,7 @@ unsigned short TableWrite(unsigned short TableNum, unsigned long Offset, unsigne
       }
       TableWriteStopRecursive[TaskId()]--;
    }
-#ifdef SIZE_TEST
-   if(RetVal != Size)
-      printf("WE %d-%d -%d\n",TableNum,RetVal,Size);
-#endif
+
    if(!RetVal)
       Debug(LogDebug,"Meter Task","TableWriteEx: Write to table#%i returns %i",TableNum,RetVal);
 
@@ -1261,25 +1119,6 @@ void TableInit()
    ni_fmat1_t buff[4*6];
    unsigned char i;
    unsigned long CRCAll,CRCSum;
-
-#ifndef Simulation
-   //make sure the area allocated for table date is big enough.
-   //check done in code since compiler is too stupid to do calc at compile time
-   if(ADDR_EXT_FLASH_END > AEMTOUSTARTADDR)
-      SysAbort( __FILE__, __LINE__);
-
-   if(ADDR_EXT_TOU_FLASH_END > AEMLOGSTARTADDR)
-      SysAbort( __FILE__, __LINE__);
-
-   if(ADDR_EXT_LOG_FLASH_END > AEMLPDATASTARTADDR)
-      SysAbort( __FILE__, __LINE__);
-
-   if(ADDR_EXT_LP_FLASH_END > AEMLPDATAENDADDR)
-      SysAbort( __FILE__, __LINE__);
-
-   if((unsigned long)(UNUSED_SPACE2) > DF_MAX_FLASH_PAGES)
-      SysAbort( __FILE__, __LINE__);
-#endif
 
 
    memset(TableWriteStopRecursive,0x00,sizeof(TableWriteStopRecursive));
@@ -1322,11 +1161,6 @@ void TableInit()
             TableWrite(eMfgT00_Hash, i*sizeof(_hash_entry_t), 4, buff);//all F's
       }
    }
-
-#ifdef Simulation
-   // let the hackery begin
-   //InitDefaultTableData();
-#endif
 }
 
 void TableBackUp()
@@ -1465,11 +1299,6 @@ unsigned char TableProcExecute(unsigned char PortSrc, unsigned char UserLvl,unsi
    //mc: do this until I can figure out where the endian issue is
    //if(ProcCmd == 0x0A00) ProcCmd = 0x000A;
 
-
-#ifdef ANSI_PROC_DEBUG
-   EVENT2("ANSI Proc %u",ProcCmd&0x0FFF);
-#endif
-
    switch (ProcCmd>>12)
    {
    case 0://on completion post result into table 8
@@ -1542,19 +1371,14 @@ unsigned char TableProcExecute(unsigned char PortSrc, unsigned char UserLvl,unsi
       TableWrite(eMfgT65_NV_Energy, 0, (sizeof(ni_fmat1_t)*4*6), &std_table_28_struct);//get values from eStdT28_PresRegData directly
       TOU_Clear();
       TOU_SelfRead_Reset();
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)|| defined(DYNAMIC_LP)
-      LP_Reset(0x0F);
-#else
+
       LP_Reset();
-#endif
+
       //EventReset(); //by order of Paul Collins this will no longer happen
       ExpEngyClear();
       QOSClearStats(0);
       Full_PartialProg(0x1F); //Reset the relay state machine
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(LC_RSM)
-      RippleApp_StatusReset(); //Reset the Ripple Status Table MfgT75
-      RAppLC_StatusReset();//Reset the Emergency function log and relay switch count in MfgT27
-#endif
+
       EventLogWrite(eEvtProcExe,GetCommsUserID(),2,&ProcCmd);
       break;
    case STD_PROC04:// Reset List Pointer
@@ -1565,25 +1389,10 @@ unsigned char TableProcExecute(unsigned char PortSrc, unsigned char UserLvl,unsi
          EventReset();
       else if(pData[0]==2)//reset self read
          TOU_SelfRead_Reset();
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)|| defined(DYNAMIC_LP)
-      else if(pData[0]==3)//reset LP Set 1
-         LP_Reset(0x01);
-      else if(pData[0]==4)//reset LP Set 2
-         LP_Reset(0x02);
-      else if(pData[0]==5)//reset LP Set 3
-         LP_Reset(0x04);
-      else if(pData[0]==6)//reset LP Set 4
-         LP_Reset(0x08);
-      else if(pData[0]==7)//reset all LP
-         LP_Reset(0x0F);
-#else
+
       else if(pData[0]==7)//reset all LP
          LP_Reset();
-#endif
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(LC_RSM)
-      else if(pData[0]==34)//reset ripple event log
-         RipplApp_EventReset();
-#endif
+
       else
          Response=ANSI_PROC_PAR;
       break;
@@ -1598,12 +1407,7 @@ unsigned char TableProcExecute(unsigned char PortSrc, unsigned char UserLvl,unsi
       //ANSI says "When invoked, the end device attempts to clear all standard status flags"
       TableWrite(eStdT03_EDMODEStatus,offsetof(_std_table_03_t,ed_std_status1),sizeof(_ED_Std_status1_bfld)+1,NULL);
       MStatCheckBattery();
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)
-      MeterStdStatusResetHandler(FORCE_LOG_ONLY);
-#endif
-#if defined(METROLOGY_MMI_ERROR_REPORTING)
-      g_Metrology_Tot_MMI_ErrCount=0; //Reset  MMI error count to allow event/status retrigger
-#endif
+
       break;
    case STD_PROC08:     //Clear Mfg Status Flag, hack for dcw
       EventLogWrite(eEvtProcExe,GetCommsUserID(),2,&ProcCmd);
@@ -1682,27 +1486,15 @@ unsigned char TableProcExecute(unsigned char PortSrc, unsigned char UserLvl,unsi
       break;
    case MFG_PROC07:// Update full/partial programming date
       EventLogWrite(eEvtProcExe,GetCommsUserID(),2,&ProcCmd);
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)|| defined(DYNAMIC_LP)
-      if(UpdateProgEvent(pData,GetCommsUserID()))
-         Response=ANSI_PROC_PAR;
-      else
-      {
-        tbl8_tmp.resp_data[0] = pData[2];
-        tbl8_tmp.resp_data[1] = pData[3];
-      }
-#else
+
 		if(UpdateProgEvent(pData,GetCommsUserID()))
          Response=ANSI_PROC_PAR;
-#endif
+
       break;
    case MFG_PROC08:// Relay Operation
       EventLogWrite(eEvtProcExe,GetCommsUserID(),2,&ProcCmd);
       tempw=RelayCommsCmdProc(pData,PortSrc);
 
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(LC_RSM)
-   if(((pData[3] == 0xFF) && (pData[4] > 3)))//Programming the LC Control for U1300
-         tempw = 0;
-#endif
       tbl8_tmp.resp_data[0]=tempw;
 		
       if((tempw==0)||(tempw==8))
@@ -1774,14 +1566,9 @@ unsigned char TableProcExecute(unsigned char PortSrc, unsigned char UserLvl,unsi
       tempw=FwDownloadProc(pData);
       if(tempw==0)
       {
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)   
-      if((gU1300Ver2) && (gU1300S2_ValidFirmware == 0)) //if U1300 series 2 and Firmware invalid
-        Response=ANSI_PROC_DEV;
-      else
-        Response=ANSI_PROC_PAR;
-#else
+
       Response=ANSI_PROC_PAR;
-#endif
+
       }
       break;
    case MFG_PROC13:// Special undocumented customer command to kill a factory1/2 level user
@@ -1790,16 +1577,7 @@ unsigned char TableProcExecute(unsigned char PortSrc, unsigned char UserLvl,unsi
          MCom_ToggleFactoryUserAccess(pData[1],pData[2],UserLvl);//set/clear, bitmask, user level
       else if(pData[0]==0x10)
          SysMon_TempMeasurementStatsInitProc();//Reset temp measurement Stats
-#if defined(DEBUG_EVENT_LOG_ADD_ON_CMD)
-      else if(pData[0]==0x01)
-      {//add a fake event to the event log
-         // proc comd data is [0x01][event ID][event ID][Usr ID][Usr ID][Evnt data][Evnt data][Evnt data][Evnt data][Evnt data][Evnt data]
-         tempw=get16(&pData[1]);
 
-         if( ((tempw>0)&&(tempw<eEvtMaxStd)) || ((tempw>=eEvtVoltLossA)&&(tempw<eEvtMaxMfg)) )
-            EventLogWrite(tempw,get16(&pData[3]),6,&pData[5]);
-      }
-#endif
       else if(pData[0]==0x11)
       {
          //print internal event log to crash log
@@ -1820,28 +1598,13 @@ unsigned char TableProcExecute(unsigned char PortSrc, unsigned char UserLvl,unsi
          EventLogWrite(eEvtCommsUpdate,GetCommsUserID(),6,&pData[0]);
       }
       break;
-#if defined(NEUTRAL_INTEGRITY) || defined(NEUTRAL_INTEGRITY_POLY)
-   case MFG_PROC15: //NI command to Enable/Disable Installation mode and or the entire NI module
-      EventLogWrite(eEvtProcExe,GetCommsUserID(),2,&ProcCmd);
-   #if defined(NEUTRAL_INTEGRITY)
-      if(Metrology_NICommand(pData))
-   #elif defined(NEUTRAL_INTEGRITY_POLY)
-      if(PolyPhaseNI_Command(pData))
-   #endif
-         Response=ANSI_PROC_DEV;
-      break;
-#endif
+
    case MFG_PROC16:
       EventLogWrite(eEvtProcExe,GetCommsUserID(),2,&ProcCmd);
       if(pData[0] == 1)
          TOUFix(pData[1]);
       break;
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)|| defined(DYNAMIC_LP)
-   case MFG_PROC17: //Update the last unread pointer for partial LP data readout via mfg tables 90-93
-      if(!LPPartialMfgProc(pData))
-         Response=ANSI_PROC_PAR;
-      break;
-#endif
+
    case MFG_PROC18:
       if(pData[0]<2)
          Response = Mcom_SetupExclusiveRemoteAccess(pData[0]);
@@ -2090,9 +1853,6 @@ unsigned short int FWDataBlockWrite(unsigned char *buffer, unsigned short int le
   unsigned short int FWBlkSize;
   unsigned long int FWBlkOffset;
   FLASH_DATA *nmpheader = NULL;  
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)
-  unsigned char U1300S2_Base_Firmware[3] = {0x52,0x34,0x34}; //0x52 = 'R', 0x34 = '4', 0x34 = '4'
-#endif
 
   TableRead(eMfgT31_FwDlStatus, offsetof(_mfg_table_31_t, FWBlkOffset), sizeof(FWBlkOffset), &FWBlkOffset);
   TableRead(eMfgT31_FwDlStatus, offsetof(_mfg_table_31_t, FWBlkSize), sizeof(FWBlkSize), &FWBlkSize);
@@ -2104,38 +1864,7 @@ unsigned short int FWDataBlockWrite(unsigned char *buffer, unsigned short int le
   {
     nmpheader = (FLASH_DATA *) &buffer[2];		// the first 2 bytes are CRC (see the CompressedImgHdr struct)
     //memcpy(FirmwareCheck,(void*)nmpheader->part_number[13],sizeof(FirmwareCheck));
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)
-    if(gU1300Ver2) //Only do this for the U1300 Series 2
-    {
-     // printf("Part Num %d %d %d\n",nmpheader->part_number[13],nmpheader->part_number[14],nmpheader->part_number[15]);
-      // The part_number[] is 20 bytes in length. but the part number we use is 16 bytes
-      if(nmpheader->part_number[13] == U1300S2_Base_Firmware[0]) //Perform a check on R builds only
-      {
-        if(nmpheader->part_number[14] < U1300S2_Base_Firmware[1]) //if firmware is older than R4x
-        {
-          //printf("Older than R4x\n");
-          gU1300S2_ValidFirmware = 0;
-        }
-        else
-        {
-          if(nmpheader->part_number[15] < U1300S2_Base_Firmware[2])//if firmware is older than R44
-          {
-            gU1300S2_ValidFirmware = 0;
-            //printf("Older than R44\n");
-          }
-          else
-            gU1300S2_ValidFirmware = 1;
-        }
-      }
-      else
-        gU1300S2_ValidFirmware = 1;
-    }
-    else
-      gU1300S2_ValidFirmware = 1;
-#endif
-#ifndef Simulation
-    flashRead (FLASH_NONE, nmpheader->prom_part_number, PART_NUM_LEN, BOOT_CODE_OFFSET + BOOT_PART_OFFSET);
-#endif
+
     // the dev type?
     //nmpheader->dev_type = 1; // hey I reckon the pc tool should do this for us, it's not always 1 (and we won't know what it should be)
   }
@@ -2149,16 +1878,9 @@ unsigned short int FWDataBlockWrite(unsigned char *buffer, unsigned short int le
   }
   
   Debug(LogDebug,"Fw Dl","Block written at offset %ld", FWBlkOffset);
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)   
-   if((gU1300Ver2 == 0) || (gU1300S2_ValidFirmware)) //if U1300 series 1 or Firmware is valid
-   {
-     flashWrite(FLASH_1, buffer, FWBlkSize, FWBlkOffset);
-   }
-   else
-     len = 0;//return len of 0
-#else
+
   flashWrite(FLASH_1, buffer, FWBlkSize, FWBlkOffset);
-#endif
+
   
   FWBlkOffset += FWBlkSize;
   
@@ -2191,11 +1913,7 @@ unsigned char FwDownloadArm(unsigned char *pData)
      Debug(LogDebug,"Fw Dl","Firmware Download Arm (switch now)");
      FwDownloadFixSeq();
      FwDownloadFixBootPartNum();
-#if defined (AMPY_METER_NO_RF)    
-     FwDownloadRelayCRCFix();//to back compatible old fw version is too complex, instead I add 100 spare bytes to prevent tablesize change in the future
-#elif defined(AMPY_METER_U3400)
-     FwDownloadRelayCRCFix(16);
-#else
+
      if(gU1300Ver2 == 0)
      {
        FwDownloadRelayCRCFix(24);
@@ -2204,7 +1922,7 @@ unsigned char FwDownloadArm(unsigned char *pData)
      {
        FwDownloadRelayCRCFix(16);
      }
-#endif
+
      //EventLogWrite(eEvtFWChanged,0,1,&temp);
      retVal = eFwDlArmComplete;    // the user won't see this, since we're rebooting but anyway...
      AMPYArmCrashLog();
@@ -2299,10 +2017,7 @@ unsigned char FwDownloadProc(unsigned char* pData)
   case eFwDlStart:     // clear the first page in the tank to clear the header?
     // clear all so we can skip sending ff's
     Debug(LogDebug,"Fw Dl","Firmware Download Start");
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)  
-    if(gU1300S2_ValidFirmware == 0)
-      gU1300S2_ValidFirmware = 1;//This is to handle a situaition where the firmware download has been reinitiated after a failure
-#endif
+
     RetVal = 1;
     break;
   case eFwDlSync:      // get offset and block length
@@ -2311,28 +2026,14 @@ unsigned char FwDownloadProc(unsigned char* pData)
     TableWrite(eMfgT31_FwDlStatus, offsetof(_mfg_table_31_t, FWBlkOffset), sizeof(FWBlkOffset), &FWBlkOffset);
     TableWrite(eMfgT31_FwDlStatus, offsetof(_mfg_table_31_t, FWBlkSize), sizeof(FWBlkSize), &FWBlkSize);
     Debug(LogDebug,"Fw Dl","Sync to offset %i",FWBlkOffset);
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)   
-    if((gU1300Ver2) && (gU1300S2_ValidFirmware == 0)) //if U1300 series 2 and Firmware invalid
-    {
-      RetVal = 0; // will result in  ANSI_PROC_DEV (Request conflicts with current device setup. Request ignored)
-    }
-    else
-      RetVal = 1;
-#else
+
     RetVal = 1;
-#endif           
+           
     break;
    case eFwDlArm:       
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)   
-     if((gU1300Ver2) && (gU1300S2_ValidFirmware == 0)) //if U1300 series 2 and Firmware invalid
-     {
-       RetVal = 0; // will result in  ANSI_PROC_DEV (Request conflicts with current device setup. Request ignored)
-     }
-     else
-       RetVal = FwDownloadArm(&pData[1]);
-#else
+
      RetVal = FwDownloadArm(&pData[1]);
-#endif
+
      break;
      //case eFwDlBlank:   // blank from offset to the end of the tank...
      //break;
@@ -2351,36 +2052,7 @@ void FwDlCtrlUpdate(void)
    TableWrite(eMfgT00_Hash, eHashFirmwareM16*sizeof(_hash_entry_t), sizeof(crc32), (void *)&crc32);
 }
 
-#if defined(AMPY_METER_NO_RF) 
-  void FwDownloadRelayCRCFix()
-  {
-    unsigned short TempS;
-    unsigned long crc32 = 0;
-    
-    TempS = sizeof(_mfg_table_66_t) - 60;
-    CalcTableHashPartial(eMfgT66_ActiveRelayConfig,&crc32,0,TempS);//we have added two bytes
-    TempS = sizeof(_mfg_table_67_t) - 60;
-    CalcTableHashPartial(eMfgT67_FutureRelayConfig,&crc32,0,TempS);
-    TempS = sizeof(_mfg_table_68_t) - 50;
-    CalcTableHashPartial(eMfgT68_RelaySettings,&crc32,0,TempS);
-    TableWrite(eMfgT00_Hash, eHashRelay*sizeof(_hash_entry_t), sizeof(unsigned long), &crc32);
-    UpdateHashCheck();
-  }
-#elif defined(AMPY_METER_U3400)
-  void FwDownloadRelayCRCFix(unsigned char size)
-  {
-    unsigned short TempS;
-    unsigned long crc32 = 0;
-    
-    TempS = sizeof(_mfg_table_66_t) - size;
-    CalcTableHashPartial(eMfgT66_ActiveRelayConfig,&crc32,0,TempS);//we have added two bytes
-    TempS = sizeof(_mfg_table_67_t) - size;
-    CalcTableHashPartial(eMfgT67_FutureRelayConfig,&crc32,0,TempS);
-    CalcTableHashPartial(eMfgT68_RelaySettings,&crc32,0,0);
-    TableWrite(eMfgT00_Hash, eHashRelay*sizeof(_hash_entry_t), sizeof(unsigned long), &crc32);
-    UpdateHashCheck();
-  }
-#else
+
 void FwDownloadRelayCRCFix(unsigned char size)
 {
   unsigned short TempS;
@@ -2401,7 +2073,7 @@ void FwDownloadRelayCRCFix(unsigned char size)
   }
   UpdateHashCheck();
 }
-#endif
+
 /*-------------------------------------------------------------------------------
 * Function:    GetMfg54Addr
 * Outputs:     Returns address of Manufacturing table 54 in external flash
@@ -2513,19 +2185,6 @@ unsigned char Log3rdPartyEvent(unsigned char *pData)
    return ANSI_PROC_PAR;
 }
 
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(LC_RSM)
-/*-------------------------------------------------------------------------------
-* Function:    GetMfg74Addr
-* Outputs:     Returns address of Manufacturing table 74 in external flash
-* Description: Return address of Manufacturing table 76 in external flash since
-*              macro only works in this c file.
-*------------------------------------------------------------------------------*/
-unsigned long GetMfg74Addr()
-{
-   return AEMPRIPPLELOGSTARTADDR + ADDR_EXT_FLASH_MFG074;
-}
-#endif
-
 /*-------------------------------------------------------------------------------
 * Function:    GetStd76Addr
 * Outputs:     Returns address of Standard table 76 in external flash
@@ -2537,22 +2196,6 @@ unsigned long GetStd76Addr()
    return AEMLOGSTARTADDR + ADDR_EXT_FLASH_STD76;
 }
 
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)|| defined(DYNAMIC_LP)
-	unsigned long GetStd61Addr()
-	{
-	  return AEMTABLESTARTADDR + ADDR_EXT_FLASH_STD61;
-	}
-
-	unsigned long GetStd62Addr()
-	{
-	  return AEMTABLESTARTADDR + ADDR_EXT_FLASH_STD62;
-	}
-
-	unsigned long GetMfg36Addr()
-	{
-	   return AEMTABLESTARTADDR + ADDR_EXT_FLASH_MFG036;
-	}
-#endif
 unsigned long GetMfg15Addr()
 {
   return AEMTABLESTARTADDR + ADDR_EXT_FLASH_MFG015;
@@ -2618,7 +2261,7 @@ void ChkPendingTblWriteUpdate(void)
 
 }
 
-#ifdef PRINT_TABLEADDR_FLASH
+
 void TableAddrFlash()//to be called from a factory procedure
 {
    unsigned short TableNum = 0;
@@ -2663,4 +2306,4 @@ void TableAddrFlash()//to be called from a factory procedure
       }
    }
 }
-#endif
+
