@@ -401,22 +401,9 @@ void MeterTask( void )
    unsigned char OneSecCounter=0;//accurate RTC 1 sec counter
    unsigned char FakeSeconds=0;//inaccurate seconds counter that does not rely on the I2C RTC chip.
    unsigned long TotalSleepTime,SnapShot;
-#ifdef FLASH_ERASEWRITE_TIME_DEBUG
-   unsigned char FlashChkFlg=0;
-#endif
 
    AMPYPowerStateMode=eAMPYpsNoPower;
 
-   //queueInit (0, 0, (QUEUE_HDR QH_NEAR *) &LGMeter_Q);
-
-   // ideally, such a RAM sizing problem should be caught with a compile time
-   // check. since the necessary math is not possible with the precompiler, do
-   // the next best thing and check it at run time
-   if(0)// ((&BackupChecksum - &Start_Backup) != BACKUP_DATA_SIZE)
-   {
-      // check the function DummyVariableAccess() if you see this error
-      SysAbort( __FILE__, __LINE__);
-   }
 
 #if !defined(SIMULATION_SR)
 #pragma segment="PART_INFO"
@@ -433,257 +420,12 @@ void MeterTask( void )
 #endif
 
 
-#if defined(DBG_POWERFAILTEST)
-   TimerB1_Setup();
-#endif
    AMPYPowerUp();
 
 
-   #if defined(Simulation) && defined(UnitTesting)
-   UnitTests();
-   #endif
 
    while (TRUE)
-   {
-     
-#ifdef SIM_INTERRUPT		
-		if(PressedButtons.Bits.Button2)
-		{
-			StopTest = 1;	
-		}
-      if(PressedButtons.Bits.Button1) 
-      {
-         StopTest = 0;
-      }
-#endif
-#if defined(LCD_TEST)
-      if(PressedButtons.Bits.Button2)
-      {
-         if (gLCD_TEST)
-         {
-            gLCD_TEST = 0;
-         }
-         else
-         {
-            gLCD_TEST = 1;
-         }
-         PressedButtons.Bits.Button2=0;        
-      }
-      
-      if(PressedButtons.Bits.Button1) 
-      {
-         gUpdate = 1;
-         PressedButtons.Bits.Button1=0;
-      }
-#endif      
-#if defined(LOG_POWER_DN_DELAY)
-      if(PressedButtons.Bits.Button2)
-      {
-         MStatPowerUp();
-         Display(edPassed, DISPLAYIDNOSHOW);
-         PressedButtons.Bits.Button2=0;
-      }
-#endif
-
-#ifdef TYPETEST_DEBUG
-      if(PressedButtons.Bits.Button2)
-      {
-         //DumpCtrlRegisters();
-        // ((void (*)(void))NULL)();//function call of 0x00000
-         //tl=*((unsigned long *)NULL);
-         //printf("Addr 0=%lu",tl);
-         disable();
-
-         EnableSingleStepIRQ(1);
-         EnableSingleStepIRQ(0);
-         enable();
-         PrintPCHistory();
-         PressedButtons.Bits.Button2=0;
-      }
-#endif
-#ifdef PROFILE_ON
-      if(PressedButtons.Bits.Button2)
-      {
-         profilePrint();
-         profileReset();
-         PressedButtons.Bits.Button2=0;
-      }
-#endif
-#ifdef CHECK_IN_DEBUG
-      if(PressedButtons.Bits.Button2)
-      {
-         StillAlivePrint();
-         PressedButtons.Bits.Button2=0;
-      }
-#endif
-#ifdef PLATFORM_USER_LVL_DEBUG
-      if(PressedButtons.Bits.Button2)
-      {
-         PlatformCountPrint();
-         PressedButtons.Bits.Button2=0;
-      }
-#endif
-#ifdef FLASH_ERASEWRITE_TIME_DEBUG
-      extern unsigned char DisplayNumber(unsigned long int num, unsigned char offset,unsigned char len, unsigned char ShowZero);
-      extern void DisplayChar(unsigned char value, unsigned char displacement);
-      if(PressedButtons.Bits.Button2)
-      {
-         int page=0;
-         unsigned char buff[2];
-         unsigned long tempUL;
-         _std_table_01_t ST01Bkp;
-
-         buff[0]=0x50;
-         buff[1]=0xFA;
-         TableRead(eStdT01_GenMfgID,0,0,&ST01Bkp);
-         while(page<4096)
-         {
-            if((page/10)&0x0001)
-               VARHLED_STATE=IO_LO;
-            else
-               VARHLED_STATE=IO_HI;
-
-            LockTask();
-            tempUL=SysTimeGet();
-            DataFlashWritePageBytes(page,0,buff,2);
-            tempUL=SysTimeGet()-tempUL;
-            UnlockTask();
-            //printf("page %i=%lu\n",page,tempUL);
-            if(tempUL>30)
-            {
-               FlashChkFlg=1;
-               break;
-            }
-
-            if((page%41)==0)
-            {
-               Display(edBlank, DISPLAYIDNOSHOW);
-               DisplayChar(eChar_F,6);
-               DisplayChar(eChar_L,5);
-               DisplayChar(eChar_A,4);
-               DisplayChar(eChar_S,3);
-               DisplayChar(eChar_H,2);
-               DisplayNumber(page/41L,0,2,1);
-               DisplayD_Update(gLCDArr);
-            }
-            page++;
-         }
-         printf("page %i=%lu\n",page,tempUL);
-         if(!FlashChkFlg)
-            FlashChkFlg=2;
-         TableWrite(eStdT01_GenMfgID,0,0,&ST01Bkp);
-         PressedButtons.Bits.Button2=0;
-      }
-      if(FlashChkFlg)
-      {
-         if(FlashChkFlg==2)
-            Display(edPassed, DISPLAYIDNOSHOW);
-         else
-            Display(edFailed, DISPLAYIDNOSHOW);
-      }
-#endif
-#ifdef LOG_COMMS_CMDS
-      if(PressedButtons.Bits.Button2)
-      {
-         PrintLogMsg();
-         PressedButtons.Bits.Button2=0;
-      }
-#endif
-#ifdef DBG_TEST_RELAY_PULSE
-      extern unsigned char DisplayNumber(unsigned long int num, unsigned char offset,unsigned char len, unsigned char ShowZero);
-      extern void DisplayChar(unsigned char value, unsigned char displacement);
-      if(PressedButtons.Bits.Button2)
-      {
-         gRelayDbgTime+=5;
-         if(gRelayDbgTime>60)
-            gRelayDbgTime=25;
-         Display(edBlank, DISPLAYIDNOSHOW);
-         DisplayChar(eChar_r,4);
-         DisplayNumber(gRelayDbgTime,0,2,1);
-         PressedButtons.Bits.Button2=0;
-      }
-#endif
-#ifdef DBG_TEST_RELAY_CYCLE
-      extern unsigned char DisplayNumber(unsigned long int num, unsigned char offset,unsigned char len, unsigned char ShowZero);
-      extern void DisplayChar(unsigned char value, unsigned char displacement);
-      if(PressedButtons.Bits.Button2)
-      {
-         if(Get_Button_Status()&PUSHBUTTON1_BIT)
-         {
-            Display(edPassed, DISPLAYIDNOSHOW);
-            gRelayDbgCycCnt=0;
-            gRelayDbgCycRun=0;
-            gRelayDbgCycTimer=0;
-            gRelayDbgCycGlitch=0;
-            AMPYPowerCycleCountReset();
-         }
-         else
-         {
-            if(gRelayDbgCycRun)
-               gRelayDbgCycRun=0;
-            else
-               gRelayDbgCycRun=1;
-         }
-         PressedButtons.Bits.Button2=0;
-      }
-#endif
-
-#ifdef PWD_DOWN_RLY_SWITCH_DEBUG
-      extern unsigned char DisplayNumber(unsigned long int num, unsigned char offset,unsigned char len, unsigned char ShowZero);
-      extern void DisplayChar(unsigned char value, unsigned char displacement);
-      if(PressedButtons.Bits.Button2)
-      {
-         gRlyDbgMode++;
-         if(gRlyDbgMode>12)//there are 13 options in total
-            gRlyDbgMode=0;
-
-         Display(edBlank, DISPLAYIDNOSHOW);
-         DisplayChar(eChar_r,5);
-         DisplayChar(eChar_L,4);
-         DisplayChar(eChar_y,3);
-         DisplayNumber(gRlyDbgMode,0,2,1);
-         PressedButtons.Bits.Button2=0;
-      }
-#endif
-
-#ifdef PWD_COMMS_PWR_FAIL_DEBUG
-      extern unsigned char DisplayNumber(unsigned long int num, unsigned char offset,unsigned char len, unsigned char ShowZero);
-      extern void DisplayChar(unsigned char value, unsigned char displacement);
-      if(PressedButtons.Bits.Button2)
-      {
-         Display(edBlank, DISPLAYIDNOSHOW);
-         DisplayChar(eChar_P,6);
-         DisplayChar(eChar_F,5);
-         DisplayNumber(0,3,1,1);
-         MTR_PF_STATE=IO_LO;
-         g_dbg_comms_pwr_fail=100;
-         PressedButtons.Bits.Button2=0;
-      }
-      if(LongPressedButtons.Bits.Button2)
-      {
-         Display(edBlank, DISPLAYIDNOSHOW);
-         DisplayChar(eChar_P,6);
-         DisplayChar(eChar_F,5);
-         DisplayNumber(1,3,1,1);
-         MTR_PF_STATE=IO_LO;
-         g_dbg_comms_pwr_fail=1000;
-         LongPressedButtons.Bits.Button2=0;
-      }
-#endif
-#if defined(DBG_PRINT_TIME_DBG) || defined(POLYNI_DEBUG)
-      if(PressedButtons.Bits.Button2)
-      {
-         if (g_dbg_do_print)
-            g_dbg_do_print = 0;
-         else
-            g_dbg_do_print=MfgT24_TempStatus.AvgAccumCount;
-         PressedButtons.Bits.Button2=0;
-         printf("print=%d\n",g_dbg_do_print);
-      }
-#endif
-
-      DBG_PRINT_TIME(0);
-
+   {     
       if(AMPYForceReset)
       {
          AMPYPowerFail();
@@ -719,9 +461,6 @@ void MeterTask( void )
          }
          else if(AMPYPowerStateMode==eAMPYpsActive)
          {
-#if defined(PWD_COMMS_PWR_FAIL_DEBUG)
-            if(g_dbg_comms_pwr_fail==0)
-#endif
             if(gZCLoss==0)
                RemotePortPowerRestore();
          }
@@ -746,9 +485,7 @@ void MeterTask( void )
          if(TotalSleepTime>=AMPYEMAIL_SLEEPTIME)
          {
             TotalSleepTime=0;
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)|| defined(DYNAMIC_LP)				
-            LP_SecTick();
-#endif
+
             OneSecCounter+=RTC_MainLoopTick();
             P_DN_LOG_TIME_MAINLOOP(4);
             DBG_PRINT_TIME(3);
@@ -761,51 +498,9 @@ void MeterTask( void )
             P_DN_LOG_TIME_MAINLOOP(6);
             DBG_PRINT_TIME(5);
             DisplayMainLoopTick();
-#ifdef DBG_TEST_RELAY_CYCLE
-            if(gRelayDbgCycRun)
-            {
-               Display(edBlank, DISPLAYIDNOSHOW);
-               if(gRelayDbgCycRun==1)
-               {
-                  DisplayChar(eChar_r,6);
-                  DisplayNumber(gRelayDbgCycCnt,0,6,1);
-               }
-               else if(gRelayDbgCycRun==2)
-               {
-                  DisplayChar(eChar_P,6);
-                  if(MStatPowerCycleCheck(2))
-                  {
-                     DisplayChar(eChar_minus,0);
-                     DisplayChar(eChar_minus,1);
-                     DisplayChar(eChar_minus,2);
-                     DisplayChar(eChar_minus,3);
-                     DisplayChar(eChar_minus,4);
-                  }
-                  else
-                  {
-                     TableRead(eMfgT54_GnrlMeterNVStatus,offsetof(_mfg_table_54_t,PFCycleCounts),2,&gRelayDbgCycTemp);
-                     DisplayNumber(gRelayDbgCycTemp,0,5,1);
-                  }
-               }
-               else
-               {
-                  DisplayChar(eChar_g,6);
-                  DisplayNumber(gRelayDbgCycGlitch,0,5,1);
-               }
-            }
-#endif
+
             P_DN_LOG_TIME_MAINLOOP(7);
             DBG_PRINT_TIME(6);
-            
-
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(LC_RSM)
-            RippleMsTick();
-            DBG_PRINT_TIME(7);
-            RAppLC_MainloopTick();
-            DBG_PRINT_TIME(8);
-            RippleApp_MainloopTick();
-            DBG_PRINT_TIME(9);
-#endif
 
             RelayMainLoopTick();
             DBG_PRINT_TIME(10);
@@ -821,22 +516,11 @@ void MeterTask( void )
             P_DN_LOG_TIME_MAINLOOP(11);
             UpdateTrueRand();
             P_DN_LOG_TIME_MAINLOOP(12);
-            #ifdef U1300_RIPPLE
-            MetrologyADC_ProcMainLoop();
-            #endif
+
             Metrology_NIMainLoopTick();
             DBG_PRINT_TIME(13);
             metrology_driver_energy_update();
-#ifdef  PRINT_TABLEADDR_FLASH
-            extern unsigned char gFlashTableData;
-            extern void TableAddrFlash();
 
-            if(gFlashTableData)
-            {
-               gFlashTableData = 0;
-               TableAddrFlash();
-            }
-#endif
             //------------------- Update Timers --------------------------------------
             // we'll lose time if this loop doesn't execute every 30ms...
             // At some point it was seen that LP_SecTick() was being executed only ~53 times per minute.
@@ -846,9 +530,7 @@ void MeterTask( void )
 
             if(gRTCChanged)
             {//time has been changed tell anyone who cares
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(LC_RSM)
-              gRAppLC_CheckSeason = 1;
-#endif
+
                if(TOU_ChkDoRateChange())//Check if we have to switch to another rate.
                      gProcessSkipped|=AMPY_PROC_SKIP_TOU;
                gRTCChanged=0;
@@ -863,20 +545,14 @@ void MeterTask( void )
                gSecCheckDone = 0;
 
                P_DN_LOG_TIME_MAINLOOP(14);
-#if (!(defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)))&&(!defined(DYNAMIC_LP))					
-               LP_SecTick();
-#endif					
+					
                DBG_PRINT_TIME(15);
                CommsSecTick();
                DBG_PRINT_TIME(16);
                DisplaySecTick();
                P_DN_LOG_TIME_MAINLOOP(15);
                DBG_PRINT_TIME(17);
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(LC_RSM)
-               RAppLC_SecTick();
-               DBG_PRINT_TIME(18);
-               RippleApp_SecTick();
-#endif
+
                DBG_PRINT_TIME(19);
                RelaySecTick();
                P_DN_LOG_TIME_MAINLOOP(16);
@@ -888,23 +564,15 @@ void MeterTask( void )
                P_DN_LOG_TIME_MAINLOOP(18);
                DBG_PRINT_TIME(22);
                TOU_SecTick();
-#if defined(LP_QOS)
-               LpQoS_SecTick();
-#endif
+
                DBG_PRINT_TIME(23);
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(AMPY_METER_U3400)
-               TamperDetectSecTick();
-#endif         
+        
                DBG_PRINT_TIME(24);
                SysMon_TempCheck();
                DBG_PRINT_TIME(25);
-#if defined(METROLOGY_VERIFY_MMI_PARAMS)
-               Metrology_MMIParamUpdateTick();
-#endif
+
                DBG_PRINT_TIME(26);
-#if defined(PULSE_OUTPUT)
-               PulseOutput_ThresholdCtrl_SecTick();
-#endif
+
                DBG_PRINT_TIME(27);
                if(RealTime.TimeFlags & MIN1_FLAG)
                {
@@ -923,26 +591,7 @@ void MeterTask( void )
                   RealTime.TimeFlags &= ~MIN1_FLAG;
                }
                AMPYUpdateTbl3StatusFlags();
-#ifdef DBG_TEST_RELAY_CYCLE
-               extern void RelayChange(unsigned char RelayType, unsigned char Command);
-               if(gRelayDbgCycRun)
-               {
-                  gRelayDbgCycRun&=0x03;
-                  gRelayDbgCycRun++;
 
-                  gRelayDbgCycTimer++;
-                  if(gRelayDbgCycTimer==5)
-                  {//close relay
-                     RelayChange(DisRelay, cClose);
-                  }
-                  else if(gRelayDbgCycTimer>=10)
-                  {//open realy
-                     RelayChange(DisRelay, cOpen);
-                     gRelayDbgCycTimer=0;
-                     gRelayDbgCycCnt++;
-                  }
-               }
-#endif
             }//end one sec counter
          }//end of sleep time tick ~30ms
       }
@@ -1004,9 +653,6 @@ void AMPYEmail_1msTickISR(void)
 	//if (PWRFAIL_STATE==0)
 	if (i>=5)  //power fail	
 	{
-#ifndef AMPY_METER_R1100
-		PHASELEDA_STATE = PHASELEDB_STATE = PHASELEDC_STATE =0;
-#endif
 		DF_refresh_on_write = 0;
 		gEarlyPwrFailWarning = 1;
 	}
@@ -1016,53 +662,13 @@ void AMPYEmail_1msTickISR(void)
 		gEarlyPwrFailWarning = 0;
 	}
    
-   #ifdef SIM_INTERRUPT
-      if (gPFDebug.PFState>3)
-        DF_refresh_on_write = 0;
-   #endif
 #endif
 	AMPYSysValTest();
-#ifdef PLATFORM_HOG_DEBUG
-   LogPlatformTimeTick();
-#endif
 	
    Comms1msTickISR();
    Button_chk();
    RTC1msTickISR();
    RelayDriverMsecISR();
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(LC_RSM)
-   RAppLC_1msTick();
-#endif
-   
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(MAINS_CLOCK)
-   RTC_ZC1msTickISR();
-#endif
-   
-#if defined(PRINT_POWER_DN_DELAY)
-   //check for falling edge
-   if((LastPFPinState)&&(PWRFAIL_STATE==0))
-      gPDTriggerTime=SysTimeGet();//It's a falling edge! log it.
-   LastPFPinState=PWRFAIL_STATE;
-#endif
-#if defined(DBG_TEST_RELAY_CYCLE)
-   if((LastPFPinState)&&(PWRFAIL_STATE==0))
-      gRelayDbgCycGlitch++;
-   LastPFPinState=PWRFAIL_STATE;
-#endif
-   //RippleMsTick();
-
-#ifdef PWD_COMMS_PWR_FAIL_DEBUG
-   if(g_dbg_comms_pwr_fail)
-   {
-      g_dbg_comms_pwr_fail--;
-      if(g_dbg_comms_pwr_fail==0)
-         MTR_PF_STATE=IO_HI;
-   }
-#endif
-#ifdef DBG_PWR_FAIL_PIN_OUT
-   if(PWRFAIL_STATE==0)
-      VARHLED_STATE^=1;
-#endif
 }
 
 
@@ -1098,36 +704,10 @@ void MeterApplicationLowLevelInit (void)
 
    //Init Buttons (that is buttons and tamper switches)
    //TODO this may not have to be here if its in the bootloader
-#ifndef AMPY_METER_R1100
-   PUSHBUTTON1_DIR = INPUT;
-   PUSHBUTTON2_DIR = INPUT;
-   PUSHBUTTON3_DIR = INPUT;
-   PUSHBUTTON4_DIR = INPUT;
-#endif
+
    //Return LED to normal behaviour
    override_AMPY_LED=FALSE;
 
-
-#if defined(AMPY_METER_NO_RF)
-   //check if ID code has not been set
-   unsigned char IDArr[9];
-   int i;
-
-   //Set ID as real value
-   MCom_GetFactoryKeys(0,9,IDArr);
-   for(i=0;i<9;i++)
-      IDArr[i]+=IDHashArr[i];
-   #if !defined(SIMULATION_SR)
-   //compare desired ID to actual
-   for(i=0;i<9;i++)
-   {
-      if(IDArr[i]!=((unsigned char *)0xfffdf)[i*4])
-         break;
-   }
-   if(i!=9)
-      ReWriteIDBytes(IDArr);
-   #endif
-#endif
 
 #if defined(U1300_RIPPLE)||defined(MAINS_CLOCK)
 
@@ -1137,21 +717,10 @@ void MeterApplicationLowLevelInit (void)
    adcmpcr = 0x00;
 
    //adcon 2 must be set first, selcect AN0-AN7 group, f1 as clock source and clk div=1
-#ifndef Simulation
-   adcon2 = 0x00;
 
-   //select single sweep mode, software trigger, stop conversion and clk div=1
-   adcon0 = 0x10;
-
-   //select AN0-AN3 sweep, not sweep mode 1, enable ADC voltage supply, don't use ANEX0/1 and clk div=1
-   adcon1 = 0x31;
-#endif
 
    Ripple_InitTimerB1();
-#ifndef Simulation
-   adic = 0x05;
-   tb1ic = 0x06;
-#endif
+
    tb1s = 1; 
    Ripple_StartADCConversion();
 #endif
@@ -1214,43 +783,17 @@ void AMPYPowerFail (void)
 {
    unsigned short temp_w;
    
-  
-
-#if defined (PF_DEBUG)
-   // UNUSED_P011_STATE=0;
-    UNUSED_P014_STATE=0;
-#endif   
-
-#if defined(PRINT_POWER_DN_DELAY)
-   unsigned char DoPDLog;
-   unsigned long TimeD;
-
-   if(MStatPowerCycleCheck(2))
-      DoPDLog=0;
-   else
-      DoPDLog=21;
-#endif
 
    gPowerDownStartFlag = 1;
-   #if defined(AMPY_METER_R1100)
-      gPowerDown_R1100_LEDs_Function_Disable = 1;
-  #endif
+
    AMPYPowerFailTurnOffLeds();
-#ifdef SIM_INTERRUPT   
-   gPFDebug.PDProcessTmStamp = gPFDebug.tics;
-   gPFDebug.LastTaskStepTmStamp[METERTASK] = gPFDebug.tics;
-#endif
+
    if(AMPYPowerStateMode==eAMPYpsActive)
    {//powering fail after a long up-time, system is fully active so do a full backup
       //printf("A->LPM %lu\n",SysTimeGet());
-#if defined(PULSE_OUTPUT)
-      PulseOutput_PwrDn();
-#endif
+
       EVENT1("PwrDn");
-#if defined(NSMP_LOS)      
-      P_DN_PRINT_TIME(1);
-      RelayLOSPwrDn();
-#endif
+
       P_DN_PRINT_DELAY(__LINE__);
       P_DN_PRINT_MAINLOOP();
       P_DN_PRINT_TIME(2);
@@ -1266,20 +809,6 @@ void AMPYPowerFail (void)
       TableWrite(eMfgT72_GnrlMeterNVStatusBckp, offsetof(_mfg_table_54_t,PFCycleCounts[2]),2, &temp_w);
 		
 	   SysMon_NVBakup(0);
-#ifdef DBG_TEST_RELAY_CYCLE
-      TableWrite(eMfgT52_MfgConst, offsetof(_mfg_table_52_t,Spare[0]),4, &gRelayDbgCycCnt);
-      TableWrite(eMfgT52_MfgConst, offsetof(_mfg_table_52_t,Spare[4]),2, &gRelayDbgCycGlitch);
-#endif
-
-#if defined(DBG_PWR_FAIL_LC_RLY_CHNG)
-      if(!(PUSHBUTTON_STATE_PORT & PUSHBUTTON1_BIT))
-      {//button is not being pressed
-         RELAY2_OPEN_STATE=IO_LO;
-         RELAY2_CLOSE_STATE=IO_HI;
-         Pend(0,20);
-         RELAY2_CLOSE_STATE=IO_LO;
-      }
-#endif
 
       P_DN_PRINT_TIME(4);
       RTC_Disable();
@@ -1298,10 +827,7 @@ void AMPYPowerFail (void)
       TOU_PowerDown();
       P_DN_PRINT_TIME(10);
       TableBackUp();
-      #ifndef AMPY_METER_R1100
-      P_DN_PRINT_TIME(11);
-      DisplayD_blank();
-      #endif
+
 
       Metrology_PowerDown();
 
@@ -1315,12 +841,6 @@ void AMPYPowerFail (void)
    
       P_DN_PRINT_TIME(15);
       CommsDisable();
-#ifndef AMPY_METER_R1100
-      PrePaymentPowerDown();
-#endif
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(LC_RSM)
-      Tampers_Powerdown();
-#endif
        
       P_DN_PRINT_TIME(16);
       gProcessSkipped=0;
@@ -1331,102 +851,20 @@ void AMPYPowerFail (void)
       temp_w--;
       TableWrite(eMfgT54_GnrlMeterNVStatus, offsetof(_mfg_table_54_t,PFCycleCounts[3]),2, &temp_w);
       // save mfg table 54 to non volatile
-#ifdef SIM_INTERRUPT
-      unsigned short dwTemp = gPFDebug.tics - gPFDebug.PDProcessTmStamp;
-      if (dwTemp>gSimInterrupt.PDProcessMaxDelay)
-      {
-         gSimInterrupt.PDProcessMaxDelay = dwTemp;
-         gPFDebug.SimInfoUpdated = 1;
-      }
-      if (gPFDebug.SimInfoUpdated)
-         TableWrite(eMfgT54_GnrlMeterNVStatus,offsetof(_mfg_table_54_t,pfSimulator),sizeof(_sim_interrupt_t),&gSimInterrupt);
-#endif      
+   
       TableWrite(eMfgT72_GnrlMeterNVStatusBckp, 0,0, &mfg_table_54_struct);
 
       AMPYFlashDisablePacking();
       gPowerDownStartFlag = 0;
-      #if defined(AMPY_METER_R1100)
-        gPowerDown_R1100_LEDs_Function_Disable = 0;
-      #endif
+
 	
       P_DN_PRINT_TIME(17);
       EVENT1("PwrDn done");
       //printf("LPM start %lu\n",SysTimeGet());
-#if defined(DBG_POWERFAILTEST)
-#if 0
-      while(1)
-      {
-         printf("%u\n",gcount);
-         Pend(0,50);
-      }
-#endif
-#endif
-      AMPYPowerStateMode=eAMPYpsLPM;
-#ifdef SIM_INTERRUPT
-      disable();
-	   while (TRUE);
-#endif		
-#if defined(PWD_DOWN_RLY_SWITCH_DEBUG)
-      if(0x01&gRlyDbgMode)
-         temp_w=cClose;
-      else
-         temp_w=cOpen;
 
-      if(gRlyDbgMode==0)//0
-      {
-         RELAY1_CLOSE_STATE=IO_LO;
-         RELAY1_OPEN_STATE=IO_HI;
-         RELAY2_CLOSE_STATE=IO_LO;
-         RELAY2_OPEN_STATE=IO_HI;
-         RELAY3_CLOSE_STATE=IO_LO;
-         RELAY3_OPEN_STATE=IO_HI;
-         Pend(0,100);
-         RELAY1_OPEN_STATE=IO_LO;
-         RELAY2_OPEN_STATE=IO_LO;
-         RELAY3_OPEN_STATE=IO_LO;
-      }
-      else if(((gRlyDbgMode+1)>>1)==1)//1,2
-      {
-         RelayChange(DisRelay,temp_w);
-         RelayChange(ConRelay,temp_w);
-         RelayChange(OthRelay,temp_w);
-      }
-      else if(((gRlyDbgMode+1)>>1)==2)//3,4
-      {
-         RelayChange(DisRelay,temp_w);
-         RelayChange(OthRelay,temp_w);
-         RelayChange(ConRelay,temp_w);
-      }
-      else if(((gRlyDbgMode+1)>>1)==3)//5,6
-      {
-         RelayChange(ConRelay,temp_w);
-         RelayChange(DisRelay,temp_w);
-         RelayChange(OthRelay,temp_w);
-      }
-      else if(((gRlyDbgMode+1)>>1)==4)//7,8
-      {
-         RelayChange(ConRelay,temp_w);
-         RelayChange(OthRelay,temp_w);
-         RelayChange(DisRelay,temp_w);
-      }
-      else if(((gRlyDbgMode+1)>>1)==5)//9,10
-      {
-         RelayChange(OthRelay,temp_w);
-         RelayChange(DisRelay,temp_w);
-         RelayChange(ConRelay,temp_w);
-      }
-      else if(((gRlyDbgMode+1)>>1)==6)//11,12
-      {
-         RelayChange(OthRelay,temp_w);
-         RelayChange(ConRelay,temp_w);
-         RelayChange(DisRelay,temp_w);
-      }
-#endif
+      AMPYPowerStateMode=eAMPYpsLPM;
+	
    }
- #if defined (PF_DEBUG)
-  //  UNUSED_P011_STATE=1;
-   UNUSED_P014_STATE=1;
-#endif
 
 }
 
@@ -1446,19 +884,12 @@ void AMPYPowerUp (void)
    unsigned long DownTime;
    _std_table_52_t LocalRTC;
    unsigned long temp_l;
- #if defined(AMPY_METER_R1100)
-        gPowerDown_R1100_LEDs_Function_Disable = 0;
- #endif	
+
    gPowerDownStartFlag = 0;
    g_relay_pf_override = 0;
 
-#if defined(BREAKER_LSVD)
-   RelayDischargeLSVD();
-#endif
+
 	
-#ifdef SIM_INTERRUPT
-	gPFDebug.PFState = 0;
-#endif
    if(AMPYPowerStateMode==eAMPYpsLPM)
    {//powering up after a short outage RAM is still valid and full init is not required
       //printf("LPM->A %lu\n",SysTimeGet());
@@ -1478,9 +909,7 @@ void AMPYPowerUp (void)
       // restore NV backup of mfg table 54 from mfg table 72
       TableRead(eMfgT72_GnrlMeterNVStatusBckp, 0,0, &mfg_table_54_struct);
       
-#ifdef SIM_INTERRUPT
-      TableRead(eMfgT54_GnrlMeterNVStatus,offsetof(_mfg_table_54_t,pfSimulator),sizeof(_sim_interrupt_t),&gSimInterrupt);
-#endif
+
       
       if(RTC_Init(0,&DownTime))//0-because we want normal mode on the RTC chip
       {//shut down! undo what we just did
@@ -1544,9 +973,6 @@ void AMPYPowerUp (void)
       if(AMPYFlashUnpack()!=0)  //gsk:if we have aborted flash unpacking,we can't  trust the data,so abort powerup as well
          return;
       
-#ifdef SIM_INTERRUPT
-      TableRead(eMfgT72_GnrlMeterNVStatusBckp,offsetof(_mfg_table_54_t,pfSimulator),sizeof(_sim_interrupt_t),&gSimInterrupt);
-#endif  
       
       P_DN_LOG_TIME(0);
       MStatPrePowerUp();
@@ -1563,15 +989,7 @@ void AMPYPowerUp (void)
       TableInit();//this should be called before any call to TableWrite
       Metrology_ChkAndFixFaultyPulseDiv();
       Metrology_InitPolyPhaseMeterFlag();
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)
-      if(gU1300Ver2)
-      {
-        //Initialize the SPI bus 3 for U1300 series 2 hardware
-        Metrology_SPI_Init();
-        //Used for debugging the SPI bus 3 on which the MMI(s) are connected for U1300 series 2
-        //Metrology_SPI_ReadVersion();
-      }
-#endif
+
       Post(METROLOGY_TASK, AMPY_INIT_DONE);//tell metrology it can now use the tables
 
       temp_c=1;
@@ -1613,9 +1031,7 @@ void AMPYPowerUp (void)
          //printf("NP->A abort %lu\n",SysTimeGet());
          return;
       }
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(LC_RSM)
-      TamperInit();           //Init Tampers
-#endif
+
       SysMon_NVBakup(1);
       TableRead(eMfgT72_GnrlMeterNVStatusBckp, offsetof(_mfg_table_54_t,PFCycleCounts[0]),2, &temp_w);
       temp_w++;
@@ -1664,11 +1080,6 @@ void AMPYPowerUp (void)
 
    if(AMPYPowerStateMode==eAMPYpsActive)
    {
-      #if defined(PWD_DOWN_RLY_SWITCH_DEBUG)
-      RelayChange(DisRelay,cClose);
-      RelayChange(ConRelay,cClose);
-      RelayChange(OthRelay,cClose);
-      #endif
       gProcessSkipped=0;
 		
       AMPYCrashLogInit();
@@ -1695,14 +1106,9 @@ unsigned char AMPYPowerUpCommon (unsigned long DownTime)
    MStatPowerUp();
    CommsReset(FALSE,TOTAL_NUMBER_OF_PORTS);           //gsk: Reset All Ports on powerup
    if(AMPYGetFilteredEPF(6))return 0;
-#ifdef DBG_TEST_RELAY_CYCLE
-      TableRead(eMfgT52_MfgConst, offsetof(_mfg_table_52_t,Spare[0]),4, &gRelayDbgCycCnt);
-      TableRead(eMfgT52_MfgConst, offsetof(_mfg_table_52_t,Spare[4]),2, &gRelayDbgCycGlitch);
-#endif
+
       FirmwareStatusUpdate();
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)||defined(LC_RSM)
-      RippleSystemInit();
-#endif
+
    if(AMPYPowerStateMode==eAMPYpsLPM)
       LP_PowerUp(DownTime);
    else
@@ -1713,11 +1119,7 @@ unsigned char AMPYPowerUpCommon (unsigned long DownTime)
    if(AMPYGetFilteredEPF(8))return 0;
    RelayInit(DownTime);
    if(AMPYGetFilteredEPF(9))return 0;
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100) || defined(LC_RSM)
-   /* Do not initialize the RSM until NSMP_LOS finish the job */
-   if(RAppLC_Init(DownTime)) return 0;
-   RippleApp_Init(DownTime);
-#endif
+
    if(AMPYGetFilteredEPF(10))return 0;
 
    AMPYEmail_UpdateTamperStatus();
@@ -1734,32 +1136,14 @@ unsigned char AMPYPowerUpCommon (unsigned long DownTime)
    //TOU_SelfRead(TRUE);
    if(AMPYGetFilteredEPF(13))return 0;
    Metrology_PowerUp();
-#if defined(PULSE_OUTPUT)
-   PulseOutput_MeterPwrupInit();
-#endif
+
    SysMon_MeterPwrupTempInit(DownTime);
-#if defined(LP_QOS)   
-   LpQos_Init();
-#endif
+
    if(AMPYGetFilteredEPF(14))return 0;
    //FirmwareStatusUpdate();
    P_DN_LOG_TIME(1);
    DF_init_incremental_refresh();
    if(AMPYGetFilteredEPF(15))return 0;
-
-#if defined(DBG_PWR_FAIL_LC_RLY_CHNG)
-   if(!(PUSHBUTTON_STATE_PORT & PUSHBUTTON1_BIT))
-   {//button is not being pressed
-      RELAY2_CLOSE_STATE=IO_LO;
-      RELAY2_OPEN_STATE=IO_HI;
-      Pend(0,20);
-      RELAY2_OPEN_STATE=IO_LO;
-   }
-#endif
-
-#ifdef SEMAPHORE_RAMACCESS_DEBUG
-   gDisableSemDebug=0;   //Enable Debug Flag by default
-#endif
 
    return 1;
 }
@@ -2377,11 +1761,9 @@ unsigned short flashWriteMeter(unsigned long dest, unsigned char *src, unsigned 
 void DF_map_page_and_address(unsigned long flat_addr, unsigned short *page, unsigned short *addr)
 {
    // null out the bits in the flat address which cannot be address bits
-#if defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)|| defined(AMPY_METER_U33WEP)|| defined(AMPY_METER_U3400)
-   flat_addr &= 0x001FFFFFUL; // we have a 2 meg data flash
-#else
+
    flat_addr &= 0x000FFFFFUL; // we have a 1 meg data flash, although the first 448kB is used by Utilinet...
-#endif
+
 
    // convert to page and address within 256-byte (or 512) page (leaving 8 bytes for housekeeping, not addressable by high level read/writes).
    // map the flat address to the base address in the utilinet address space
@@ -2481,10 +1863,10 @@ __interrupt void intdummy22(void){   BadIRQ(22);}
 #pragma vector=24
 __interrupt void intdummy24(void){   BadIRQ(24);} */
 
-#if(!(defined(AMPY_METER_U1300)||defined(AMPY_METER_R1100)))&&(!defined(MAINS_CLOCK))
+
 #pragma vector=27
 __interrupt void intdummy27(void){   BadIRQ(27);}
-#endif
+
 
 #pragma vector=28
 __interrupt void intdummy28(void){   BadIRQ(28);}
@@ -2499,19 +1881,10 @@ __interrupt void intdummy32(void){   BadIRQ(32);}//start of software IRQ
 
 void BadIRQ(unsigned char IRQtype)
 {
-#ifdef TYPETEST_DEBUG
-   unsigned char flags;
-   flags = disable_save ();
-   printf ("Bad IRQ %i\n", IRQtype);
-   flush_console_out();
-   printf ("Ignoring error...\n");
-   flush_console_out();
-   PrintPCHistory();
-   enable_restore (flags);
-#else
+
    BadIRQCount++;
    BadIRQVal=IRQtype;
-#endif
+
 }
 void GetBadIRQStatus()
 {
@@ -2616,11 +1989,8 @@ void CheckFwDownloadActivationTime(void)
          gFirmwareUpgrade = 1;
          FwDownloadFixSeq();
          FwDownloadFixBootPartNum();
-#if defined (AMPY_METER_NO_RF) 
-         FwDownloadRelayCRCFix();
-#elif defined(AMPY_METER_U3400)
-         FwDownloadRelayCRCFix(16);
-#else
+
+
          if(gU1300Ver2 == 0)
          {
            FwDownloadRelayCRCFix(24);
@@ -2629,7 +1999,7 @@ void CheckFwDownloadActivationTime(void)
          {
            FwDownloadRelayCRCFix(16);
          }
-#endif
+
          templ = 0;
          TableWrite(eMfgT30_FwDlCtrl, offsetof(_mfg_table_30_t, FWDLActivateTime), sizeof(templ), &templ);
          UpdateHashCheck();
@@ -2657,34 +2027,6 @@ unsigned char AMPYPrintfHook( int c)
    return 0;
 #endif
 #ifdef FLASH_ERASEWRITE_TIME_DEBUG
-   return 0;
-#endif
-#if defined(PRINT_POWER_DN_DELAY)
-   #if !defined(LOG_POWER_DN_DELAY)
-   return 0;
-   #endif
-#endif
-#ifdef LOG_COMMS_CMDS
-   return 0;
-#endif
-#if defined(DBG_POSTRESETDUMP)
-   M16C_PetWatchDog();
-   #ifndef AMPY_METER_R1100
-   while (!ti_u1c1)
-    #else
-     while (!ti_u0c1)
-    #endif
-   {
-      M16C_PetWatchDog();
-   }
-   #ifndef AMPY_METER_R1100
-   U1TB = c;
-   #else
-   U0TB = c;
-   #endif
-   return 1;
-#endif
-#if defined(DBG_PRINT_TIME_DBG)
    return 0;
 #endif
 
@@ -2922,7 +2264,7 @@ void AMPYFlashEnablePacking(void)
 
 unsigned char AMPYFlashUnpack(void)
 {
-#if !defined(DBG_FLASH_PACK)
+
    unsigned char abort=0;      //never abort flash unpacking
    unsigned short i;
    unsigned short my_page;
@@ -3040,7 +2382,7 @@ unsigned char AMPYFlashUnpack(void)
    }
 
  return abort;
-#endif
+
 }
 
 unsigned char AMPYDFWritePageBytes(unsigned short PageNum, unsigned short offset, unsigned char *pData, unsigned short len)
@@ -3054,7 +2396,7 @@ unsigned char AMPYDFWritePageBytes(unsigned short PageNum, unsigned short offset
    return DataFlashWritePageBytes(PageNum,offset,pData,len);
 }
 
-#if defined(FLASH_FASTPACK)
+
 void AMPYFlashPackLastPage()
 {
    unsigned short my_page;
@@ -3065,7 +2407,7 @@ void AMPYFlashPackLastPage()
    if (my_addr)
       DataFlashWritePageBytesNoErase(my_page,0,gFlashPageBuff,my_addr-1);
 }
-#endif
+
 
 void AMPYFlashPack(unsigned short PageNum, unsigned short offset, unsigned char *pData, unsigned short len)
 {
@@ -3461,10 +2803,4 @@ void PrePaymentPowerDown()
    flashWriteMeter(GetMfg15Addr(), (unsigned char*)&PrePayDisplay, sizeof(_mfg_table_15_t));
 }
 
-#if defined(METROLOGY_VERIFY_MMI_PARAMS)
-void Set_Debug_FeatureMask(unsigned char* FeatureParams)
-{
-   TableWrite(eMfgT54_GnrlMeterNVStatus, offsetof(_mfg_table_54_t,SpecialFeatureMask),1, &FeatureParams[0]);
-   TableWrite(eMfgT54_GnrlMeterNVStatus, offsetof(_mfg_table_54_t,MMI_paramUpdate_Freq),2, &FeatureParams[1]);
-}
-#endif
+
