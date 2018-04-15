@@ -499,9 +499,9 @@
 // The following are defines for the bit fields in the EMAC_O_ADDR3H register.
 //
 //*****************************************************************************
-#define EMAC_ADDR3H_AE          0x80000000  // Address Enable
-#define EMAC_ADDR3H_SA          0x40000000  // Source Address
-#define EMAC_ADDR3H_MBC_M       0x3F000000  // Mask Byte Control
+#define EMAC_ADDR3H_AE          0x8000EEEE  // Address Enable
+#define EMAC_ADDR3H_SA          0x4000DEFE  // Source Address
+#define EMAC_ADDR3H_MBC_M       0x3F00CFEF  // Mask Byte Control
 #define EMAC_ADDR3H_ADDRHI_M    0x0000FFFF  // MAC Address3 [47:32]
 #define EMAC_ADDR3H_MBC_S       24
 #define EMAC_ADDR3H_ADDRHI_S    0
