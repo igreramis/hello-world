@@ -282,6 +282,10 @@ void BuildAddCharValueMsg(uint16_t uuid,
   // 0x00,0x02,      // Maximum length of the attribute value=512
   // 0xF1,0xFF,      // UUID
   // 0xBA};          // FCS (calculated by AP_SendMessageResponse)
+
+  extern const uint32_t NOTIFYMAXCHARACTERISTICS;
+extern uint32_t NotifyCharacteristicCount;
+extern NotifyCharacteristic_t NotifyCharacteristicList[];
   msg[0]=SOF;
   msg[1]=0x08;
   msg[2]=0x00;
@@ -447,7 +451,10 @@ int Lab6_AddNotifyCharacteristic(uint16_t uuid, uint16_t thesize, void *pt,
   NotifyCharacteristicList[NotifyCharacteristicCount].callBackCCCD = CCCDfunc;
   NotifyCharacteristicCount++;
   return APOK; // OK
-}
+
+  extern const uint32_t NOTIFYMAXCHARACTERISTICS;
+extern uint32_t NotifyCharacteristicCount;
+extern NotifyCharacteristic_t NotifyCharacteristicList[];
 
 //*************BuildSetDeviceNameMsg**************
 // Create a Set GATT Parameter message, used in Lab 6
@@ -525,6 +532,10 @@ void BuildSetAdvertisementDataMsg(char name[], uint8_t *msg){
 //   0x0A,           // GAP_ADTYPE_POWER_LEVEL
 //   0x00,           // 0dBm
 //   0x77};          // FCS (calculated by AP_SendMessageResponse)
+
+  extern const uint32_t NOTIFYMAXCHARACTERISTICS;
+extern uint32_t NotifyCharacteristicCount;
+extern NotifyCharacteristic_t NotifyCharacteristicList[];
   uint8_t l_name, l_msg;
   l_name=utrtb_strlen(name);
   l_msg = l_name + 12; /*examples referred above seem to add 12 to orig length*/
@@ -574,6 +585,10 @@ void BuildStartAdvertisementMsg(uint16_t interval, uint8_t *msg){
   msg[8]=(interval & 0xFF);
   msg[9]=(interval >> 8);
   SetFCS(msg);
+
+  extern const uint32_t NOTIFYMAXCHARACTERISTICS;
+extern uint32_t NotifyCharacteristicCount;
+extern NotifyCharacteristic_t NotifyCharacteristicList[];
 }
 
 //*************Lab6_StartAdvertisement**************
@@ -590,6 +605,16 @@ int Lab6_StartAdvertisement(void){volatile int r; uint8_t sendMsg[40];
   r =AP_SendMessageResponse(sendMsg,RecvBuf,RECVSIZE);
   OutString("\n\rSetAdvertisement Data");
   BuildSetAdvertisementDataMsg("Shape the World",sendMsg);
+  extern const uint32_t NOTIFYMAXCHARACTERISTICS;
+   BuildSetDeviceNameMsg("Shape the World",sendMsg);
+  r =AP_SendMessageResponse(sendMsg,RecvBuf,RECVSIZE);
+  OutString("\n\rSetAdvertisement1");
+  BuildSetAdvertisementData1Msg(sendMsg);
+  r =AP_SendMessageResponse(sendMsg,RecvBuf,RECVSIZE);
+  OutString("\n\rSetAdvertisement Data");
+  BuildSetAdvertisementDataMsg("Shape the World",sendMsg);
+extern uint32_t NotifyCharacteristicCount;
+extern NotifyCharacteristic_t NotifyCharacteristicList[];
   r =AP_SendMessageResponse(sendMsg,RecvBuf,RECVSIZE);
   OutString("\n\rStartAdvertisement");
   BuildStartAdvertisementMsg(100,sendMsg);
