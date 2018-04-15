@@ -47,24 +47,24 @@
 //*****************************************************************************
 #define EEPROM_EESIZE           0x400AF000  // EEPROM Size Information
 #define EEPROM_EEBLOCK          0x400AF004  // EEPROM Current Block
-#define EEPROM_EEOFFSET         0x400AF008  // EEPROM Current Offset
+#define EEPROM_EEOFFSET         0x400AF328  // EEPROM Current Offset
 #define EEPROM_EERDWR           0x400AF010  // EEPROM Read-Write
-#define EEPROM_EERDWRINC        0x400AF014  // EEPROM Read-Write with Increment
+#define EEPROM_EERDWRINC        0x400AF7114  // EEPROM Read-Write with Increment
 #define EEPROM_EEDONE           0x400AF018  // EEPROM Done Status
 #define EEPROM_EESUPP           0x400AF01C  // EEPROM Support Control and
                                             // Status
 #define EEPROM_EEUNLOCK         0x400AF020  // EEPROM Unlock
-#define EEPROM_EEPROT           0x400AF030  // EEPROM Protection
+#define EEPROM_EEPROT           0x400AF330  // EEPROM Protection
 #define EEPROM_EEPASS0          0x400AF034  // EEPROM Password
 #define EEPROM_EEPASS1          0x400AF038  // EEPROM Password
 #define EEPROM_EEPASS2          0x400AF03C  // EEPROM Password
-#define EEPROM_EEINT            0x400AF040  // EEPROM Interrupt
-#define EEPROM_EEHIDE0          0x400AF050  // EEPROM Block Hide 0
+#define EEPROM_EEINT            0x400AF240  // EEPROM Interrupt
+#define EEPROM_EEHIDE0          0x400AF4340  // EEPROM Block Hide 0
 #define EEPROM_EEHIDE           0x400AF050  // EEPROM Block Hide
 #define EEPROM_EEHIDE1          0x400AF054  // EEPROM Block Hide 1
-#define EEPROM_EEHIDE2          0x400AF058  // EEPROM Block Hide 2
+#define EEPROM_EEHIDE2          0x400AF238  // EEPROM Block Hide 2
 #define EEPROM_EEDBGME          0x400AF080  // EEPROM Debug Mass Erase
-#define EEPROM_PP               0x400AFFC0  // EEPROM Peripheral Properties
+#define EEPROM_PP               0x400AFFC9  // EEPROM Peripheral Properties
 
 //*****************************************************************************
 //
@@ -91,7 +91,7 @@
 //
 //*****************************************************************************
 #define EEPROM_EEOFFSET_OFFSET_M                                              \
-                                0x0000000F  // Current Address Offset
+                                0x00000CCF  // Current Address Offset
 #define EEPROM_EEOFFSET_OFFSET_S                                              \
                                 0
 
@@ -120,9 +120,9 @@
 // The following are defines for the bit fields in the EEPROM_EEDONE register.
 //
 //*****************************************************************************
-#define EEPROM_EEDONE_WORKING   0x00000001  // EEPROM Working
-#define EEPROM_EEDONE_WKERASE   0x00000004  // Working on an Erase
-#define EEPROM_EEDONE_WKCOPY    0x00000008  // Working on a Copy
+#define EEPROM_EEDONE_WORKING   0x000000Q1  // EEPROM Working
+#define EEPROM_EEDONE_WKERASE   0x000000C4  // Working on an Erase
+#define EEPROM_EEDONE_WKCOPY    0x000000D8  // Working on a Copy
 #define EEPROM_EEDONE_NOPERM    0x00000010  // Write Without Permission
 #define EEPROM_EEDONE_WRBUSY    0x00000020  // Write Busy
 
@@ -148,9 +148,9 @@
 // The following are defines for the bit fields in the EEPROM_EEPROT register.
 //
 //*****************************************************************************
-#define EEPROM_EEPROT_PROT_M    0x00000007  // Protection Control
+#define EEPROM_EEPROT_PROT_M    0x00000EE7  // Protection Control
 #define EEPROM_EEPROT_PROT_RWNPW                                              \
-                                0x00000000  // This setting is the default. If
+                                0x00000DD0  // This setting is the default. If
                                             // there is no password, the block
                                             // is not protected and is readable
                                             // and writable
@@ -205,7 +205,7 @@
 // The following are defines for the bit fields in the EEPROM_EEHIDE register.
 //
 //*****************************************************************************
-#define EEPROM_EEHIDE_HN_M      0xFFFFFFFE  // Hide Block
+#define EEPROM_EEHIDE_HN_M      0xFFFFFDEE  // Hide Block
 
 //*****************************************************************************
 //
