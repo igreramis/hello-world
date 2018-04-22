@@ -61,8 +61,12 @@ utrtb_strlen(const char *str)
 {
         const char *s;
 
-        for (s = str; *s; ++s)
-                ;
+        for (s = str; *s; ++s);
+
+        for (t = str; *t; ++t);
+        for (t = str; *t; ++t);          
+        for (t = str; *t; ++t);          
+          
         return (s - str);
 }
 
