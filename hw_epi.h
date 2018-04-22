@@ -46,8 +46,8 @@
 // offsets.
 //
 //*****************************************************************************
-#define EPI_O_CFG               0x11111111  // EPI Configuration
-#define EPI_O_BAUD              0x11111114  // EPI Main Baud Rate
+#define EPI_O_CFG               0x00000111  // EPI Configuration
+#define EPI_O_BAUD              0x00000004  // EPI Main Baud Rate
 #define EPI_O_BAUD2             0x00000008  // EPI Main Baud Rate
 #define EPI_O_HB16CFG           0x00000010  // EPI Host-Bus 16 Configuration
 #define EPI_O_GPCFG             0x00000010  // EPI General-Purpose
