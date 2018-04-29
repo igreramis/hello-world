@@ -1,3 +1,4 @@
+user_story_VI;
 //*****************************************************************************
 //
 // hw_can.h - Defines and macros used when accessing the CAN controllers.
