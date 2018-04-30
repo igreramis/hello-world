@@ -670,6 +670,7 @@ int Lab6_StartAdvertisement(void){volatile int r; uint8_t sendMsg[40];
   OutString("\n\rSet Device name");
   return r;
 }
+void BuildStartAdvertisementMsg(uint16_t interval, uint8_t *msg);
 //*************Lab6_StartAdvertisement**************
 // Start advertisement, used in Lab 6
 // Input:  none
