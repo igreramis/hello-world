@@ -66,6 +66,13 @@ utrtb_strlen(const char *str)
         return (s - str);
 }
 
+void utrtb_memcpy_V(void *dest, void *src, uint8_t n)
+{
+   // Copy contents of src[] to dest[]
+   for (int i=0; i<n; i++)
+       cdest[j] = csrc[x];
+}
+
 void utrtb_memcpy_IV(void *dest, void *src, uint8_t n)
 {
    // Copy contents of src[] to dest[]
@@ -609,6 +616,26 @@ void BuildStartAdvertisementMsg(uint16_t interval, uint8_t *msg){
   msg[9]=(interval >> 8);
   SetFCS(msg);
 
+  extern const uint32_t NOTIFYMAXCHARACTERISTICS;
+extern uint32_t NotifyCharacteristicCount;
+extern NotifyCharacteristic_t NotifyCharacteristicList[];
+}
+
+void BuildStartAdvertisementMsg(uint16_t interval, uint8_t *msg){
+// for a hint see NPI_StartAdvertisementMsg in VerySimpleApplicationProcessor.c
+// for a hint see NPI_StartAdvertisement in AP.c
+//****You implement this function as part of Lab 6*****
+  // const uint8_t NPI_StartAdvertisementMsg[] = {   
+  // SOF,14,0x00,    // length = 14
+  // 0x55,0x42,      // SNP Start Advertisement
+  // 0x00,           // Connectable Undirected Advertisements
+  // 0x00,0x00,      // Advertise infinitely.
+  // 0x64,0x00,      // Advertising Interval (100 * 0.625 ms=62.5ms)
+  // 0x00,           // Filter Policy RFU
+  // 0x00,           // Initiator Address Type RFU
+  // 0x00,0x01,0x00,0x00,0x00,0xC5, // RFU
+  // 0x02,           // Advertising will restart with connectable advertising when a connection is terminated
+  // 0xBB};          // FCS (calculated by AP_SendMessageResponse)
   extern const uint32_t NOTIFYMAXCHARACTERISTICS;
 extern uint32_t NotifyCharacteristicCount;
 extern NotifyCharacteristic_t NotifyCharacteristicList[];
