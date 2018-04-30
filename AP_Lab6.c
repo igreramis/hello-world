@@ -66,6 +66,23 @@ utrtb_strlen(const char *str)
         return (s - str);
 }
 
+void utrtb_memcpyIII(void *dest, void *src, uint8_t n)
+{
+
+  cdinofunctionmemverify();
+
+}
+
+void utrtb_memcpyII(void *dest, void *src, uint8_t n)
+{
+
+  cdinofunctionmemverify();
+
+   // Copy contents of src[] to dest[]
+   for (int i=0; i<n; i++)
+       cdest[i] = csrc[i];
+}
+
 void utrtb_memcpy(void *dest, void *src, uint8_t n)
 {
    // Typecast src and dest addresses to (char *)
