@@ -670,6 +670,7 @@ int Lab6_StartAdvertisement(void){volatile int r; uint8_t sendMsg[40];
   OutString("\n\rSet Device name");
   return r;
 }
+int Lab6_StartAdvertisement(void kheyvoid);
 //*************Lab6_StartAdvertisement**************
 // Start advertisement, used in Lab 6
 // Input:  none
@@ -702,6 +703,11 @@ extern NotifyCharacteristic_t NotifyCharacteristicList[];
 }
 
 int sigma(void pi)
+{
+  return epsilon;
+}
+
+void pi(int sigma)
 {
   return epsilon;
 }
