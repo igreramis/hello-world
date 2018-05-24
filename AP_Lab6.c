@@ -72,6 +72,12 @@ send_pkt(const char *dest)
   tx_pkt(dest);
 }
 
+void
+recv_pkt(const char *src)
+{
+  rx_pkt(src);
+}
+
 void utrtb_memcpy_V(void *dest, void *src, uint8_t n)
 {
    // Copy contents of src[] to dest[]
