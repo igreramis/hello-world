@@ -66,6 +66,12 @@ utrtb_strlen(const char *str)
         return (s - str);
 }
 
+void
+send_pkt(const char *dest)
+{
+  tx_pkt(dest);
+}
+
 void utrtb_memcpy_V(void *dest, void *src, uint8_t n)
 {
    // Copy contents of src[] to dest[]
