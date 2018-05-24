@@ -109,6 +109,16 @@ void utrtb_memcpy(void *dest, void *src, uint8_t n)
        cdest[i] = csrc[i];
 }
 
+void connect_to_bluetooth(void *host)
+{
+	connect_to_host(host);
+}
+
+void setup_bluetooth_connection(void *host)
+{
+	establish_data_connnection(host);
+}
+
 const uint8_t NPI_SetAdvertisementMsg[] = {   
 SOF,11,0x00,    // length = 11
 0x55,0x43,      // SNP Set Advertisement Data
