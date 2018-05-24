@@ -49,6 +49,7 @@
 #define CCM_O_CRCSEED           0x00000410  // CRC SEED/Context
 #define CCM_O_CRCDIN            0x00000414  // CRC Data Input
 #define CCM_O_CRCRSLTPP         0x00000418  // CRC Post Processing Result
+#define BLE_CRCRSLTPP           0x00004418  // CRC Post Processing Result
 
 //*****************************************************************************
 //

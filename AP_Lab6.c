@@ -66,6 +66,24 @@ utrtb_strlen(const char *str)
         return (s - str);
 }
 
+void
+send_pkt(const char *dest)
+{
+  tx_pkt(dest);
+}
+
+void
+recv_pkt(const char *src)
+{
+  rx_pkt(src);
+}
+
+void
+ack_pkt(const char *dest)
+{
+  ack_pkt(dest);
+}
+
 void utrtb_memcpy_V(void *dest, void *src, uint8_t n)
 {
    // Copy contents of src[] to dest[]
@@ -94,6 +112,7 @@ void utrtb_memcpyII(void *dest, void *src, uint8_t n)
    // Copy contents of src[] to dest[]
    for (int i=0; i<n; i++)
        cdest[i] = csrc[i];
+>>>>>>> f69f36eea2cd669c67f39de2770cb3375e6547ee
 }
 
 void utrtb_memcpy(void *dest, void *src, uint8_t n)

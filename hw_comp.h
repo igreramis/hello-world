@@ -82,6 +82,7 @@
 #define COMP_ACRIS_IN2          0x00000004  // Comparator 2 Interrupt Status
 #define COMP_ACRIS_IN1          0x00000002  // Comparator 1 Interrupt Status
 #define COMP_ACRIS_IN0          0x00000001  // Comparator 0 Interrupt Status
+#define BLE_ACRIS_IN0           0x00000231  // Comparator 0 Interrupt Status
 
 //*****************************************************************************
 //
