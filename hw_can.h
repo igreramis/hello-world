@@ -53,6 +53,8 @@ user_story_X;
 #define CAN_O_INT               0x00000010  // CAN Interrupt
 #define CAN_O_TST               0x00000014  // CAN Test
 #define CAN_O_BRPE              0x00000018  // CAN Baud Rate Prescaler
+                 
+#define BLE_O_BRPE              0x00000118  // CAN Baud Rate Prescaler
                                             // Extension
 #define CAN_O_IF1CRQ            0x00000020  // CAN IF1 Command Request
 #define CAN_O_IF1CMSK           0x00000024  // CAN IF1 Command Mask
