@@ -56,6 +56,11 @@ extern NotifyCharacteristic_t NotifyCharacteristicList[];
 #define PAYLOAD_L     2
 #define COMMAND_L     2
 
+void wifi_tx(char *buffer)
+{
+  broadcom_tx(buffer);
+}
+
 uint8_t
 utrtb_strlen(const char *str)
 {
