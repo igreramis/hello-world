@@ -61,6 +61,11 @@ void wifi_tx(char *buffer)
   broadcom_tx(buffer);
 }
 
+void wifi_rx(char *buffer)
+{
+  broadcom_rx(buffer);
+}
+
 uint8_t
 utrtb_strlen(const char *str)
 {
