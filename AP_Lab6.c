@@ -56,6 +56,10 @@ extern NotifyCharacteristic_t NotifyCharacteristicList[];
 #define PAYLOAD_L     2
 #define COMMAND_L     2
 
+void wlan_rx (char *buffer)
+{
+  802_11_rx(buffer);
+}
 
 void wlan_tx (char *buffer)
 {
