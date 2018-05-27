@@ -56,6 +56,10 @@ extern NotifyCharacteristic_t NotifyCharacteristicList[];
 #define PAYLOAD_L     2
 #define COMMAND_L     2
 
+void eth_tx(char *buffer)
+{
+  ieee_tx(buffer);
+}
 void ble_rx(char *buffer)
 {
   ti_ble_rx(buffer);
