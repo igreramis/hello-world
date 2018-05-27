@@ -56,6 +56,12 @@ extern NotifyCharacteristic_t NotifyCharacteristicList[];
 #define PAYLOAD_L     2
 #define COMMAND_L     2
 
+
+void wlan_tx (char *buffer)
+{
+  802_11_tx(buffer);
+}
+
 void lifi_rx(char *buffer)
 {
   siddiqui_rx(buffer);
