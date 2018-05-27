@@ -60,6 +60,11 @@ void rf_tx(char *buffer)
  rf_tx(buffer);
 }
 
+void eth_rx(char *buffer)
+{
+  ieee_rx(buffer);
+}
+
 void eth_tx(char *buffer)
 {
   ieee_tx(buffer);
